@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth:*)",
+      "Bash(gh --version)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-turbopack --yes)",
+      "Bash(npm --version)",
+      "Read(//Users/yashpatil/.nvm/versions/**)",
+      "Read(//usr/local/bin/**)",
+      "Bash(export PATH=\"$PATH:/usr/local/bin:/opt/homebrew/bin\")",
+      "Bash(npx shadcn@latest init --defaults)"
+    ]
+  }
+}
