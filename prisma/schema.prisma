@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Your ratings — one row per movie/show you've watched and scored
+model Rating {
+  id        String   @id @default(cuid())
+  tmdbId    Int      // TMDB's ID for the movie/show
+  mediaType String   // "movie" | "tv" | "documentary"
+  seedScore Float    // the score you picked on the slider (1–10)
+  eloScore  Float    @default(1000) // updated dynamically by comparisons
+  review    String?  @db.Text       // optional personal note
+  watchedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tmdbId, mediaType]) // can't rate the same thing twice
+  @@index([mediaType])
+}
+
+// Your watchlist — movies/shows you want to see
+model Watchlist {
+  id        String   @id @default(cuid())
+  tmdbId    Int
+  mediaType String
+  addedAt   DateTime @default(now())
+
+  @@unique([tmdbId, mediaType])
+}
+
+// Head-to-head comparisons — "did you prefer X over Y?"
+// Each comparison updates both movies' ELO scores
+model Comparison {
+  id           String   @id @default(cuid())
+  winnerTmdbId Int
+  loserTmdbId  Int
+  mediaType    String   // comparisons only happen within the same type
+  createdAt    DateTime @default(now())
+
+  @@index([mediaType])
+}
