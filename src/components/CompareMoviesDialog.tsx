@@ -98,7 +98,7 @@ export default function CompareMoviesDialog({
           <div className="flex flex-col gap-1">
             <div className="h-1.5 w-full rounded-full bg-muted">
               <div
-                className="h-1.5 rounded-full bg-green-500 transition-all duration-300"
+                className="h-1.5 rounded-full bg-blue-500 transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -116,7 +116,7 @@ export default function CompareMoviesDialog({
           <div className="flex gap-3">
             {/* New movie */}
             <button
-              className="flex-1 flex flex-col gap-2 rounded-lg border-2 border-transparent p-2 transition-all hover:border-green-500 hover:shadow-md active:scale-95 disabled:opacity-50"
+              className="flex-1 flex flex-col gap-2 rounded-lg border-2 border-transparent p-2 transition-all hover:border-blue-500 hover:shadow-md active:scale-95 disabled:opacity-50"
               onClick={() => handleChoice(newMovie.id, opponent.id)}
               disabled={submitting}
             >
@@ -130,7 +130,7 @@ export default function CompareMoviesDialog({
               </div>
               <p className="text-center text-xs font-medium line-clamp-2">{getTitle(newMovie)}</p>
               <div className="text-center">
-                <span className="rounded-full bg-green-500 px-3 py-0.5 text-xs font-semibold text-white">
+                <span className="rounded-full bg-blue-500 px-3 py-0.5 text-xs font-semibold text-white">
                   This one
                 </span>
               </div>
@@ -142,7 +142,7 @@ export default function CompareMoviesDialog({
 
             {/* Opponent */}
             <button
-              className="flex-1 flex flex-col gap-2 rounded-lg border-2 border-transparent p-2 transition-all hover:border-green-500 hover:shadow-md active:scale-95 disabled:opacity-50"
+              className="flex-1 flex flex-col gap-2 rounded-lg border-2 border-transparent p-2 transition-all hover:border-blue-500 hover:shadow-md active:scale-95 disabled:opacity-50"
               onClick={() => handleChoice(opponent.id, newMovie.id)}
               disabled={submitting}
             >
@@ -156,7 +156,7 @@ export default function CompareMoviesDialog({
               </div>
               <p className="text-center text-xs font-medium line-clamp-2">{getTitle(opponent)}</p>
               <div className="text-center">
-                <span className="rounded-full bg-green-500 px-3 py-0.5 text-xs font-semibold text-white">
+                <span className="rounded-full bg-blue-500 px-3 py-0.5 text-xs font-semibold text-white">
                   This one
                 </span>
               </div>

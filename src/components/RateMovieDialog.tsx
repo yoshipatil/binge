@@ -163,7 +163,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
                     >
                       <span className="text-xl">
                         {isLoading
-                          ? <Loader2 className="h-5 w-5 animate-spin text-green-400" />
+                          ? <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
                           : TIER_EMOJIS[tier.label]
                         }
                       </span>
@@ -186,7 +186,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
               <div className="flex flex-col gap-1">
                 <div className="h-1 w-full rounded-full bg-white/10">
                   <div
-                    className="h-1 rounded-full bg-green-500 transition-all duration-300"
+                    className="h-1 rounded-full bg-blue-500 transition-all duration-300"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -204,7 +204,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
                         ? handleComparison(movie.id, opponent.id)
                         : handleComparison(opponent.id, movie.id)
                     }
-                    className="group flex-1 flex flex-col gap-2 rounded-xl border-2 border-transparent p-2 transition-all hover:border-green-500/60 hover:bg-white/5 active:scale-[0.97]"
+                    className="group flex-1 flex flex-col gap-2 rounded-xl border-2 border-transparent p-2 transition-all hover:border-blue-500/60 hover:bg-white/5 active:scale-[0.97]"
                   >
                     <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-zinc-800">
                       <Image

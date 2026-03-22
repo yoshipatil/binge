@@ -12,13 +12,26 @@ const links = [
   { href: "/recommendations", label: "For You", icon: Sparkles },
 ]
 
+// Sleek play-button icon mark
+function BingeIcon() {
+  return (
+    <div className="relative flex h-8 w-8 items-center justify-center">
+      {/* Outer ring */}
+      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 opacity-90" />
+      {/* Play triangle */}
+      <svg viewBox="0 0 24 24" className="relative z-10 h-4 w-4" fill="white">
+        <path d="M8 5.14v14l11-7-11-7z" />
+      </svg>
+    </div>
+  )
+}
+
 function BingeLogo() {
   return (
-    <span className="text-2xl font-black tracking-tighter">
-      <span className="bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">
-        B
+    <span className="text-xl font-black tracking-tight">
+      <span className="bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 bg-clip-text text-transparent">
+        Binge
       </span>
-      <span className="text-white">inge</span>
     </span>
   )
 }
@@ -30,10 +43,8 @@ export default function NavBar() {
     <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/70 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-1.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-green-500 to-emerald-400">
-            <span className="text-xs font-black text-black">B</span>
-          </div>
+        <Link href="/" className="flex items-center gap-2">
+          <BingeIcon />
           <BingeLogo />
         </Link>
 

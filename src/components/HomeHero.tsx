@@ -80,7 +80,7 @@ export default function HomeHero({ featured }: HomeHeroProps) {
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-8 sm:px-8 md:px-12">
           {featured && !isSearching && (
             <div className="mb-5">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-green-400">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-blue-400">
                 Trending Now
               </p>
               <h1 className="text-2xl font-bold text-white drop-shadow-lg sm:text-3xl md:text-4xl">
@@ -99,7 +99,7 @@ export default function HomeHero({ featured }: HomeHeroProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search movies, shows, documentaries..."
-              className="h-11 w-full rounded-xl border border-white/10 bg-black/50 pl-10 pr-10 text-sm text-white placeholder:text-white/35 backdrop-blur-xl focus:border-green-500/50 focus:bg-black/70 focus:outline-none focus:ring-1 focus:ring-green-500/30 transition-all"
+              className="h-11 w-full rounded-xl border border-white/10 bg-black/50 pl-10 pr-10 text-sm text-white placeholder:text-white/35 backdrop-blur-xl focus:border-blue-500/50 focus:bg-black/70 focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all"
             />
             {query && (
               <button
@@ -209,7 +209,7 @@ function SearchCard({
           trigger={
             <Button
               size="sm"
-              className="h-6 w-full gap-1 text-xs bg-green-600 hover:bg-green-500 text-white border-0"
+              className="h-6 w-full gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0"
             >
               <Star className="h-3 w-3" />
               Rate

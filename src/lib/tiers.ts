@@ -15,9 +15,9 @@ export const TIERS: Tier[] = [
     label: "All Time",
     min: 9.0,
     max: 10.1,
-    color: "bg-green-500",
+    color: "bg-blue-500",
     text: "text-white",
-    border: "border-green-500",
+    border: "border-blue-500",
   },
   {
     label: "Loved It",
