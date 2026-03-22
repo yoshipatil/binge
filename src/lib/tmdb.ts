@@ -85,6 +85,38 @@ export async function getMultipleMovies(
   )
 }
 
+// Watch providers (streaming availability) — powered by JustWatch via TMDB
+export interface WatchProvider {
+  provider_id: number
+  provider_name: string
+  logo_path: string
+}
+
+export interface WatchProviders {
+  flatrate?: WatchProvider[] // subscription (Netflix, Hulu, etc.)
+  rent?: WatchProvider[]
+  buy?: WatchProvider[]
+}
+
+export async function getWatchProviders(
+  tmdbId: number,
+  type: "movie" | "tv" = "movie",
+  country = "US"
+): Promise<WatchProviders | null> {
+  try {
+    const data = await tmdbFetch<{ results: Record<string, WatchProviders> }>(
+      `/${type}/${tmdbId}/watch/providers`
+    )
+    return data.results?.[country] ?? null
+  } catch {
+    return null
+  }
+}
+
+export function getProviderLogoUrl(logoPath: string): string {
+  return `${IMG}/w45${logoPath}`
+}
+
 // Home page rows
 export function getTrending(type: "movie" | "tv" | "all" = "all"): Promise<TMDBSearchResponse> {
   return tmdbFetch<TMDBSearchResponse>(`/trending/${type}/week`)

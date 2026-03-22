@@ -8,6 +8,8 @@ import {
   getTVRecommendations,
   getPosterUrl,
   getBackdropUrl,
+  getWatchProviders,
+  getProviderLogoUrl,
 } from "@/lib/tmdb"
 import { normalizeEloScores } from "@/lib/elo"
 import { getTier } from "@/lib/tiers"
@@ -29,17 +31,16 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
   const { type } = await searchParams
   const mediaType = (type === "tv" ? "tv" : "movie") as "movie" | "tv"
 
-  // Fetch movie details, user rating, and recommendations in parallel
-  let movie, existingRating, recommendations
+  // Fetch movie details, user rating, recommendations, and watch providers in parallel
+  let movie, existingRating, recommendations, watchProviders
   try {
-    ;[movie, existingRating, recommendations] = await Promise.all([
+    ;[movie, existingRating, recommendations, watchProviders] = await Promise.all([
       mediaType === "tv" ? getTVDetails(Number(id)) : getMovieDetails(Number(id)),
-      prisma.rating.findFirst({
-        where: { tmdbId: Number(id) },
-      }),
+      prisma.rating.findFirst({ where: { tmdbId: Number(id) } }),
       mediaType === "tv"
         ? getTVRecommendations(Number(id))
         : getMovieRecommendations(Number(id)),
+      getWatchProviders(Number(id), mediaType),
     ])
   } catch {
     notFound()
@@ -174,6 +175,61 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
                 initialInWatchlist={isInWatchlist}
               />
             </div>
+
+            {/* Where to watch */}
+            {watchProviders?.flatrate && watchProviders.flatrate.length > 0 && (
+              <div className="mt-1">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                  Stream on
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {watchProviders.flatrate.map((p) => (
+                    <div
+                      key={p.provider_id}
+                      className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5"
+                      title={p.provider_name}
+                    >
+                      <Image
+                        src={getProviderLogoUrl(p.logo_path)}
+                        alt={p.provider_name}
+                        width={20}
+                        height={20}
+                        className="rounded"
+                      />
+                      <span className="text-xs text-white/70">{p.provider_name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Rent/Buy if no streaming */}
+            {!watchProviders?.flatrate?.length && (watchProviders?.rent?.length || watchProviders?.buy?.length) && (
+              <div className="mt-1">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                  Rent or buy on
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[...(watchProviders.rent ?? []), ...(watchProviders.buy ?? [])]
+                    .filter((p, i, arr) => arr.findIndex(x => x.provider_id === p.provider_id) === i)
+                    .map((p) => (
+                      <div
+                        key={p.provider_id}
+                        className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5"
+                      >
+                        <Image
+                          src={getProviderLogoUrl(p.logo_path)}
+                          alt={p.provider_name}
+                          width={20}
+                          height={20}
+                          className="rounded"
+                        />
+                        <span className="text-xs text-white/70">{p.provider_name}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
 
             {/* Overview */}
             {movie.overview && (

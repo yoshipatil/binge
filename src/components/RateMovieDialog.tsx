@@ -1,10 +1,5 @@
 "use client"
 
-// The rating flow — no number picking, ever.
-// Step 1: Pick a broad tier (how did you feel about it?)
-// Step 2: Head-to-head comparisons to place it precisely
-// Score is assigned by the algorithm, not by the user.
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -18,8 +13,8 @@ import { Button } from "@/components/ui/button"
 import { getPosterUrl, getMovieDetails, getTVDetails } from "@/lib/tmdb"
 import { TIERS } from "@/lib/tiers"
 import { getTitle, type TMDBMovie, type MediaType } from "@/types"
+import { Loader2 } from "lucide-react"
 
-// Map each tier to a starting seed score (midpoint of the tier range)
 const TIER_SEED_SCORES: Record<string, number> = {
   "All Time":        9.5,
   "Loved It":        8.5,
@@ -41,68 +36,73 @@ const TIER_EMOJIS: Record<string, string> = {
 interface RateMovieDialogProps {
   movie: TMDBMovie
   mediaType: MediaType
-  existingScore?: number
   trigger: React.ReactNode
 }
 
 type Step = "tier" | "compare" | "done"
 
-export default function RateMovieDialog({
-  movie,
-  mediaType,
-  existingScore,
-  trigger,
-}: RateMovieDialogProps) {
+export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovieDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<Step>("tier")
-  const [candidateIds, setCandidateIds] = useState<number[]>([])
   const [candidates, setCandidates] = useState<TMDBMovie[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [activeTier, setActiveTier] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   function handleOpen() {
     setOpen(true)
     setStep("tier")
-    setCandidateIds([])
     setCandidates([])
     setCurrentIndex(0)
+    setSaving(false)
+    setActiveTier(null)
+    setError(null)
   }
 
   async function handleTierPick(tierLabel: string) {
+    if (saving) return
     setSaving(true)
-    const seedScore = TIER_SEED_SCORES[tierLabel]
+    setActiveTier(tierLabel)
+    setError(null)
 
     try {
       const res = await fetch("/api/ratings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tmdbId: movie.id, mediaType, seedScore }),
+        body: JSON.stringify({
+          tmdbId: movie.id,
+          mediaType,
+          seedScore: TIER_SEED_SCORES[tierLabel],
+        }),
       })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error ?? `Server error ${res.status}`)
+      }
+
       const data = await res.json()
 
       if (data.candidateIds?.length > 0) {
-        // Fetch TMDB details for comparison candidates
         const movies = await Promise.all(
-          data.candidateIds.map((id: number) =>
+          (data.candidateIds as number[]).map((id) =>
             mediaType === "tv" ? getTVDetails(id) : getMovieDetails(id)
           )
         )
-        setCandidateIds(data.candidateIds)
         setCandidates(movies)
         setCurrentIndex(0)
         setStep("compare")
       } else {
         setStep("done")
-        setTimeout(() => {
-          setOpen(false)
-          router.refresh()
-        }, 800)
+        setTimeout(() => { setOpen(false); router.refresh() }, 900)
       }
     } catch (err) {
-      console.error("Failed to save rating:", err)
+      setError(err instanceof Error ? err.message : "Something went wrong. Try again.")
     } finally {
       setSaving(false)
+      setActiveTier(null)
     }
   }
 
@@ -113,24 +113,16 @@ export default function RateMovieDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ winnerId, loserId, mediaType }),
       })
-    } catch (err) {
-      console.error("Comparison failed:", err)
+    } catch {
+      // comparison failure is non-critical — keep going
     }
 
     if (currentIndex + 1 >= candidates.length) {
       setStep("done")
-      setTimeout(() => {
-        setOpen(false)
-        router.refresh()
-      }, 800)
+      setTimeout(() => { setOpen(false); router.refresh() }, 900)
     } else {
       setCurrentIndex((i) => i + 1)
     }
-  }
-
-  function handleSkipComparisons() {
-    setOpen(false)
-    router.refresh()
   }
 
   const opponent = candidates[currentIndex]
@@ -142,48 +134,55 @@ export default function RateMovieDialog({
         {trigger}
       </span>
 
-      <Dialog open={open} onOpenChange={(o) => { if (!o) { setOpen(false) } }}>
+      <Dialog open={open} onOpenChange={(o) => { if (!o) setOpen(false) }}>
         <DialogContent className="border-white/10 bg-zinc-950 text-white sm:max-w-md">
 
-          {/* Step 1: Tier picker */}
+          {/* Tier picker */}
           {step === "tier" && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-center text-white">
-                  How was it?
-                </DialogTitle>
-                <p className="text-center text-sm text-white/50">{getTitle(movie)}</p>
+                <DialogTitle className="text-center text-white">How was it?</DialogTitle>
+                <p className="text-center text-sm text-white/40">{getTitle(movie)}</p>
               </DialogHeader>
 
-              <div className="flex flex-col gap-2 py-2">
-                {TIERS.map((tier) => (
-                  <button
-                    key={tier.label}
-                    onClick={() => !saving && handleTierPick(tier.label)}
-                    disabled={saving}
-                    className={`flex items-center gap-3 rounded-xl border border-white/5 px-4 py-3.5 text-left transition-all hover:border-white/20 hover:bg-white/5 active:scale-[0.98] disabled:opacity-50`}
-                  >
-                    <span className="text-2xl">{TIER_EMOJIS[tier.label]}</span>
-                    <div>
-                      <p className="font-semibold text-white">{tier.label}</p>
-                    </div>
-                    <div className={`ml-auto h-2 w-2 rounded-full ${tier.color}`} />
-                  </button>
-                ))}
+              {error && (
+                <p className="rounded-lg bg-red-500/10 px-4 py-2 text-center text-sm text-red-400">
+                  {error}
+                </p>
+              )}
+
+              <div className="flex flex-col gap-2 py-1">
+                {TIERS.map((tier) => {
+                  const isLoading = saving && activeTier === tier.label
+                  return (
+                    <button
+                      key={tier.label}
+                      onClick={() => handleTierPick(tier.label)}
+                      disabled={saving}
+                      className="flex items-center gap-3 rounded-xl border border-white/5 px-4 py-3.5 text-left transition-all hover:border-white/20 hover:bg-white/5 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <span className="text-xl">
+                        {isLoading
+                          ? <Loader2 className="h-5 w-5 animate-spin text-green-400" />
+                          : TIER_EMOJIS[tier.label]
+                        }
+                      </span>
+                      <span className="font-semibold text-white">{tier.label}</span>
+                      <div className={`ml-auto h-2 w-2 flex-shrink-0 rounded-full ${tier.color}`} />
+                    </button>
+                  )
+                })}
               </div>
             </>
           )}
 
-          {/* Step 2: Comparisons */}
+          {/* Head-to-head comparisons */}
           {step === "compare" && opponent && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-center text-white">
-                  Which did you prefer?
-                </DialogTitle>
+                <DialogTitle className="text-center text-white">Which did you prefer?</DialogTitle>
               </DialogHeader>
 
-              {/* Progress */}
               <div className="flex flex-col gap-1">
                 <div className="h-1 w-full rounded-full bg-white/10">
                   <div
@@ -196,16 +195,12 @@ export default function RateMovieDialog({
                 </p>
               </div>
 
-              {/* VS cards */}
               <div className="flex gap-3">
-                {[
-                  { m: movie, isWinner: true },
-                  { m: opponent, isWinner: false },
-                ].map(({ m, isWinner }) => (
+                {([{ m: movie, win: true }, { m: opponent, win: false }] as const).map(({ m, win }) => (
                   <button
                     key={m.id}
                     onClick={() =>
-                      isWinner
+                      win
                         ? handleComparison(movie.id, opponent.id)
                         : handleComparison(opponent.id, movie.id)
                     }
@@ -230,18 +225,18 @@ export default function RateMovieDialog({
                 variant="ghost"
                 size="sm"
                 className="w-full text-white/30 hover:text-white/60"
-                onClick={handleSkipComparisons}
+                onClick={() => { setOpen(false); router.refresh() }}
               >
-                Skip
+                Skip comparisons
               </Button>
             </>
           )}
 
-          {/* Step 3: Done */}
+          {/* Done */}
           {step === "done" && (
-            <div className="flex flex-col items-center gap-3 py-6">
-              <span className="text-4xl">✅</span>
-              <p className="font-semibold text-white">Added to your rankings!</p>
+            <div className="flex flex-col items-center gap-3 py-8">
+              <span className="text-5xl">✅</span>
+              <p className="text-lg font-semibold text-white">Added to your rankings!</p>
             </div>
           )}
 
