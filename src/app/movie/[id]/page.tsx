@@ -163,7 +163,7 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
                 movie={movie}
                 mediaType={appMediaType}
                 trigger={
-                  <Button size="sm" className="gap-2">
+                  <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-500 text-white border-0">
                     <Star className="h-4 w-4" />
                     {existingRating ? "Re-rank" : "Rate This"}
                   </Button>

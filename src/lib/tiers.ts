@@ -1,5 +1,6 @@
 // Tier definitions — the single source of truth for all ranking labels and colors
-// Colors go green → purple → blue → orange → yellow → red (highest to lowest)
+// Tier colors are independent of the app's brand color (blue)
+// Gold → Purple → Teal → Orange → Yellow → Red (highest to lowest)
 
 export type Tier = {
   label: string
@@ -15,9 +16,9 @@ export const TIERS: Tier[] = [
     label: "All Time",
     min: 9.0,
     max: 10.1,
-    color: "bg-blue-500",
-    text: "text-white",
-    border: "border-blue-500",
+    color: "bg-amber-400",
+    text: "text-black",
+    border: "border-amber-400",
   },
   {
     label: "Loved It",
@@ -31,9 +32,9 @@ export const TIERS: Tier[] = [
     label: "Really Liked It",
     min: 7.0,
     max: 8.0,
-    color: "bg-blue-500",
+    color: "bg-teal-500",
     text: "text-white",
-    border: "border-blue-500",
+    border: "border-teal-500",
   },
   {
     label: "Liked It",

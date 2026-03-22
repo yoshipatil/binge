@@ -12,24 +12,39 @@ const links = [
   { href: "/recommendations", label: "For You", icon: Sparkles },
 ]
 
-// Sleek play-button icon mark
-function BingeIcon() {
+// Icon mark: film strip with a star cut-out — cinematic + rating in one shape
+function BingeIcon({ size = 32 }: { size?: number }) {
   return (
-    <div className="relative flex h-8 w-8 items-center justify-center">
-      {/* Outer ring */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 opacity-90" />
-      {/* Play triangle */}
-      <svg viewBox="0 0 24 24" className="relative z-10 h-4 w-4" fill="white">
-        <path d="M8 5.14v14l11-7-11-7z" />
-      </svg>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#3b82f6" />
+          <stop offset="100%" stopColor="#1d4ed8" />
+        </linearGradient>
+      </defs>
+      {/* Rounded rect background */}
+      <rect width="32" height="32" rx="8" fill="url(#bg)" />
+      {/* Film perforations — top */}
+      <rect x="4" y="4" width="4" height="4" rx="1" fill="white" fillOpacity="0.25" />
+      <rect x="14" y="4" width="4" height="4" rx="1" fill="white" fillOpacity="0.25" />
+      <rect x="24" y="4" width="4" height="4" rx="1" fill="white" fillOpacity="0.25" />
+      {/* Film perforations — bottom */}
+      <rect x="4" y="24" width="4" height="4" rx="1" fill="white" fillOpacity="0.25" />
+      <rect x="14" y="24" width="4" height="4" rx="1" fill="white" fillOpacity="0.25" />
+      <rect x="24" y="24" width="4" height="4" rx="1" fill="white" fillOpacity="0.25" />
+      {/* Star in center */}
+      <path
+        d="M16 10l1.6 4.9h5.2l-4.2 3 1.6 4.9L16 20l-4.2 2.8 1.6-4.9-4.2-3h5.2z"
+        fill="white"
+      />
+    </svg>
   )
 }
 
 function BingeLogo() {
   return (
     <span className="text-xl font-black tracking-tight">
-      <span className="bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 bg-clip-text text-transparent">
+      <span className="bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
         Binge
       </span>
     </span>
