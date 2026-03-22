@@ -84,3 +84,39 @@ export async function getMultipleMovies(
     )
   )
 }
+
+// Home page rows
+export function getTrending(type: "movie" | "tv" | "all" = "all"): Promise<TMDBSearchResponse> {
+  return tmdbFetch<TMDBSearchResponse>(`/trending/${type}/week`)
+}
+
+export function getPopularMovies(): Promise<TMDBSearchResponse> {
+  return tmdbFetch<TMDBSearchResponse>("/movie/popular")
+}
+
+export function getPopularTV(): Promise<TMDBSearchResponse> {
+  return tmdbFetch<TMDBSearchResponse>("/tv/popular")
+}
+
+export function getTopRated(): Promise<TMDBSearchResponse> {
+  return tmdbFetch<TMDBSearchResponse>("/movie/top_rated")
+}
+
+export function getMoviesByGenre(genreId: number): Promise<TMDBSearchResponse> {
+  return tmdbFetch<TMDBSearchResponse>("/discover/movie", {
+    with_genres: String(genreId),
+    sort_by: "popularity.desc",
+  })
+}
+
+// TMDB genre list for movies
+export const MOVIE_GENRES = [
+  { id: 28,    name: "Action" },
+  { id: 35,    name: "Comedy" },
+  { id: 27,    name: "Horror" },
+  { id: 10749, name: "Romance" },
+  { id: 878,   name: "Sci-Fi" },
+  { id: 53,    name: "Thriller" },
+  { id: 16,    name: "Animation" },
+  { id: 99,    name: "Documentary" },
+]

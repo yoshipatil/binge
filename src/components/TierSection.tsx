@@ -38,10 +38,9 @@ export default function TierSection({ tierLabel, items }: TierSectionProps) {
               <RateMovieDialog
                 movie={movie}
                 mediaType={rating.mediaType as "movie" | "tv" | "documentary"}
-                existingScore={rating.seedScore}
                 trigger={
-                  <Button variant="ghost" size="sm" className="h-7 w-full text-xs">
-                    Edit rating
+                  <Button variant="ghost" size="sm" className="h-7 w-full text-xs text-white/50 hover:text-white">
+                    Re-rank
                   </Button>
                 }
               />

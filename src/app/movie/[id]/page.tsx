@@ -151,7 +151,7 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
                   {tier.label}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  Your score: {displayScore.toFixed(1)}
+                  #{displayScore.toFixed(1)} in your list
                 </span>
               </div>
             )}
@@ -161,11 +161,10 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
               <RateMovieDialog
                 movie={movie}
                 mediaType={appMediaType}
-                existingScore={existingRating?.seedScore}
                 trigger={
                   <Button size="sm" className="gap-2">
                     <Star className="h-4 w-4" />
-                    {existingRating ? "Update Rating" : "Rate This"}
+                    {existingRating ? "Re-rank" : "Rate This"}
                   </Button>
                 }
               />
