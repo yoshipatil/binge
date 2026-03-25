@@ -7,7 +7,7 @@ import WatchlistButton from "@/components/WatchlistButton"
 import StreamingFilter from "@/components/StreamingFilter"
 import { Button } from "@/components/ui/button"
 import { getMediaType, type TMDBMovie } from "@/types"
-import { Star } from "lucide-react"
+import { Star, Sparkles, Tv } from "lucide-react"
 
 interface RecsPageProps {
   searchParams: Promise<{ streaming?: string }>
@@ -34,9 +34,10 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
     prisma.watchlist.findMany({ select: { tmdbId: true } }),
   ])
 
+  const watchlistIds = new Set(allWatchlist.map((w) => w.tmdbId))
   const alreadySeen = new Set([
     ...allRatings.map((r) => r.tmdbId),
-    ...allWatchlist.map((w) => w.tmdbId),
+    ...watchlistIds,
   ])
 
   const [movieRecs, tvRecs] = await Promise.all([
@@ -80,12 +81,14 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
   if (!hasEnoughRatings) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-6">
-        <h1 className="mb-2 text-2xl font-bold">For You</h1>
+        <PageHeader />
         <div className="flex flex-col items-center gap-3 py-20 text-center">
-          <p className="text-4xl">✨</p>
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
+            <Sparkles className="h-7 w-7 text-white/30" />
+          </div>
           <p className="text-lg font-semibold">Rate more to unlock recommendations</p>
           <p className="text-sm text-muted-foreground">
-            Rate at least a few movies to start getting personalized picks.
+            Rate at least a few titles and Binge will find what to watch next.
           </p>
         </div>
       </div>
@@ -95,10 +98,7 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
       <div className="mb-6 flex flex-col gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">For You</h1>
-          <p className="text-sm text-muted-foreground">Based on your top-rated titles</p>
-        </div>
+        <PageHeader />
         <Suspense fallback={null}>
           <StreamingFilter />
         </Suspense>
@@ -106,18 +106,20 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
 
       {!hasAnything && (
         <div className="flex flex-col items-center gap-3 py-20 text-center">
-          <p className="text-4xl">📺</p>
-          <p className="text-lg font-semibold">Nothing available on this service</p>
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
+            <Tv className="h-7 w-7 text-white/30" />
+          </div>
+          <p className="text-lg font-semibold">Nothing here for this service</p>
           <p className="text-sm text-muted-foreground">
-            Try a different streaming service or clear the filter.
+            Try a different streaming filter or clear it.
           </p>
         </div>
       )}
 
       {movieRecommendations.length > 0 && (
         <section className="mb-10">
-          <h2 className="mb-4 text-lg font-semibold">Movies You Might Love</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <h2 className="mb-4 text-base font-bold tracking-tight text-white/90">Movies You Might Love</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {movieRecommendations.map((movie) => {
               const mediaType = getMediaType(movie)
               return (
@@ -137,7 +139,7 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
                           </Button>
                         }
                       />
-                      <WatchlistButton tmdbId={movie.id} mediaType={mediaType} initialInWatchlist={false} />
+                      <WatchlistButton tmdbId={movie.id} mediaType={mediaType} initialInWatchlist={watchlistIds.has(movie.id)} />
                     </div>
                   }
                 />
@@ -149,8 +151,8 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
 
       {tvRecommendations.length > 0 && (
         <section>
-          <h2 className="mb-4 text-lg font-semibold">Shows You Might Love</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <h2 className="mb-4 text-base font-bold tracking-tight text-white/90">Shows You Might Love</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {tvRecommendations.map((movie) => {
               const mediaType = getMediaType({ ...movie, media_type: "tv" })
               return (
@@ -170,7 +172,7 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
                           </Button>
                         }
                       />
-                      <WatchlistButton tmdbId={movie.id} mediaType={mediaType} initialInWatchlist={false} />
+                      <WatchlistButton tmdbId={movie.id} mediaType={mediaType} initialInWatchlist={watchlistIds.has(movie.id)} />
                     </div>
                   }
                 />
@@ -179,6 +181,17 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
           </div>
         </section>
       )}
+    </div>
+  )
+}
+
+function PageHeader() {
+  return (
+    <div>
+      <h1 className="text-2xl font-black tracking-tight">For You</h1>
+      <p className="mt-0.5 text-sm text-muted-foreground">
+        Picked from your highest-ranked titles
+      </p>
     </div>
   )
 }
