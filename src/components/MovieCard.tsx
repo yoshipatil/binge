@@ -48,7 +48,7 @@ export default function MovieCard({ movie, mediaType, displayScore, actions }: M
           {/* Score badge — bottom right of poster */}
           {displayScore !== undefined && tier && (
             <div
-              className={`absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold shadow-md ${tier.color} ${tier.text}`}
+              className={`absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold shadow-md ${tier.dotColor}`}
             >
               {displayScore.toFixed(1)}
             </div>
@@ -78,14 +78,11 @@ export default function MovieCard({ movie, mediaType, displayScore, actions }: M
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">{year}</span>
           {tier ? (
-            <Badge className={`text-xs ${tier.color} ${tier.text} border-0`}>
+            <Badge className={`text-xs ${tier.color} ${tier.text}`}>
               {tier.label}
             </Badge>
           ) : (
-            <Badge
-              variant="outline"
-              className={`text-xs ${UNRATED.color} ${UNRATED.text} border-0`}
-            >
+            <Badge className={`text-xs ${UNRATED.color} ${UNRATED.text}`}>
               Unrated
             </Badge>
           )}

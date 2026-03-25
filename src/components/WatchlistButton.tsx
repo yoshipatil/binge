@@ -25,21 +25,25 @@ export default function WatchlistButton({
     setInWatchlist((prev) => !prev)
 
     try {
+      let res: Response
       if (!inWatchlist) {
-        await fetch("/api/watchlist", {
+        res = await fetch("/api/watchlist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tmdbId, mediaType }),
         })
       } else {
-        await fetch(`/api/watchlist?tmdbId=${tmdbId}&mediaType=${mediaType}`, {
+        res = await fetch(`/api/watchlist?tmdbId=${tmdbId}&mediaType=${mediaType}`, {
           method: "DELETE",
         })
       }
-    } catch (err) {
-      // Revert on error
+      if (!res.ok) {
+        // Revert optimistic update on server error
+        setInWatchlist((prev) => !prev)
+      }
+    } catch {
+      // Revert on network error
       setInWatchlist((prev) => !prev)
-      console.error("Watchlist toggle failed:", err)
     } finally {
       setLoading(false)
     }

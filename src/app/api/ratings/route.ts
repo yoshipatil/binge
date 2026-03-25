@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { seedEloFromScore, normalizeEloScores, pickComparisonCandidates } from "@/lib/elo"
+import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
 
 export async function GET() {
   try {
@@ -54,15 +55,36 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Get all existing ratings for this media type to pick comparison candidates
-    const existing = await prisma.rating.findMany({
-      where: { mediaType, NOT: { tmdbId: Number(tmdbId) } },
-      select: { tmdbId: true, eloScore: true },
-    })
+    // Get all existing ratings and prior comparisons for this movie in parallel
+    const [existing, priorComparisons] = await Promise.all([
+      prisma.rating.findMany({
+        where: { mediaType, NOT: { tmdbId: Number(tmdbId) } },
+        select: { tmdbId: true, eloScore: true },
+      }),
+      prisma.comparison.findMany({
+        where: {
+          mediaType,
+          OR: [{ winnerTmdbId: Number(tmdbId) }, { loserTmdbId: Number(tmdbId) }],
+        },
+        select: { winnerTmdbId: true, loserTmdbId: true },
+      }),
+    ])
 
-    const candidateIds = pickComparisonCandidates(eloScore, existing)
+    // Build the set of movies already compared against this one so we don't repeat matchups
+    const alreadyComparedIds = priorComparisons.map((c) =>
+      c.winnerTmdbId === Number(tmdbId) ? c.loserTmdbId : c.winnerTmdbId
+    )
 
-    return NextResponse.json({ rating, candidateIds })
+    const candidateIds = pickComparisonCandidates(eloScore, existing, 4, alreadyComparedIds)
+
+    // Fetch candidate movie details server-side so the client doesn't need the TMDB API key
+    const candidates = await Promise.all(
+      candidateIds.map((id) =>
+        (mediaType === "tv" ? getTVDetails(id) : getMovieDetails(id)).catch(() => null)
+      )
+    ).then((results) => results.filter(Boolean))
+
+    return NextResponse.json({ rating, candidateIds, candidates })
   } catch (err) {
     console.error("Rating save error:", err)
     return NextResponse.json({ error: "Failed to save rating" }, { status: 500 })

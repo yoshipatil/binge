@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
+import { Analytics } from "@vercel/analytics/next";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
         <footer className="border-t border-border/40 py-4 text-center text-xs text-muted-foreground">
           This product uses the TMDB API but is not endorsed or certified by TMDB.
         </footer>
+        <Analytics />
       </body>
     </html>
   );

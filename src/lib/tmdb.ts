@@ -117,6 +117,40 @@ export function getProviderLogoUrl(logoPath: string): string {
   return `${IMG}/w45${logoPath}`
 }
 
+export const STREAMING_SERVICES = [
+  { id: 8,    name: "Netflix" },
+  { id: 9,    name: "Prime" },
+  { id: 337,  name: "Disney+" },
+  { id: 350,  name: "Apple TV+" },
+  { id: 15,   name: "Hulu" },
+  { id: 1899, name: "Max" },
+  { id: 386,  name: "Peacock" },
+  { id: 531,  name: "Paramount+" },
+]
+
+export function discoverByProvider(providerId: number, type: "movie" | "tv"): Promise<TMDBSearchResponse> {
+  return tmdbFetch<TMDBSearchResponse>(`/discover/${type}`, {
+    with_watch_providers: String(providerId),
+    watch_region: "US",
+    sort_by: "popularity.desc",
+  })
+}
+
+export async function getWatchProvidersForMany(
+  items: { tmdbId: number; mediaType: string }[]
+): Promise<Map<number, WatchProviders>> {
+  const results = await Promise.all(
+    items.map(({ tmdbId, mediaType }) =>
+      getWatchProviders(tmdbId, mediaType === "tv" ? "tv" : "movie")
+    )
+  )
+  const map = new Map<number, WatchProviders>()
+  items.forEach(({ tmdbId }, i) => {
+    if (results[i]) map.set(tmdbId, results[i]!)
+  })
+  return map
+}
+
 // Home page rows
 export function getTrending(type: "movie" | "tv" | "all" = "all"): Promise<TMDBSearchResponse> {
   return tmdbFetch<TMDBSearchResponse>(`/trending/${type}/week`)

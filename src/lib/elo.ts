@@ -18,37 +18,50 @@ export function seedEloFromScore(score: number): number {
   return 800 + (score / 10) * 400
 }
 
-// Normalize all ELO scores in your list to a 0–10 display scale
-// Your highest-rated movie approaches 10.0, lowest approaches 0.0
-// Scores are relative to YOUR list, not a global standard
+// Normalize ELO scores to a 0–10 display scale.
+// Uses a dynamic floor/ceiling that expands to fit the actual distribution,
+// with a minimum spread of 600 pts to keep the scale stable for small lists.
+// This prevents scores from ever going below 0 or above 10 as ratings accumulate.
 export function normalizeEloScores<T extends { tmdbId: number; eloScore: number }>(
   ratings: T[]
 ): (T & { displayScore: number })[] {
   if (ratings.length === 0) return []
-  if (ratings.length === 1) return ratings.map((r) => ({ ...r, displayScore: 7.5 }))
 
-  const scores = ratings.map((r) => r.eloScore)
-  const min = Math.min(...scores)
-  const max = Math.max(...scores)
+  const elos = ratings.map((r) => r.eloScore)
+  const minElo = Math.min(...elos)
+  const maxElo = Math.max(...elos)
+
+  // Anchor floor/ceiling to at least 700–1300 (300pt padding on each side of seed range 800–1200).
+  // If real data goes outside that window, expand to fit with 50pt padding.
+  const floor = Math.min(minElo - 50, 700)
+  const ceiling = Math.max(maxElo + 50, 1300)
+  const range = ceiling - floor
 
   return ratings.map((r) => ({
     ...r,
-    displayScore:
-      max === min ? 7.5 : Math.round(((r.eloScore - min) / (max - min)) * 10 * 10) / 10,
+    displayScore: Math.round(((r.eloScore - floor) / range) * 10 * 10) / 10,
   }))
 }
 
-// Pick the best candidates to compare against when you add a new movie
+// Pick the best candidates to compare against when you add a new movie.
 // Picks from across the ELO range (top, bottom, median, closest neighbors)
-// so a few comparisons are enough to place the movie accurately
+// so a few comparisons are enough to place the movie accurately.
+// excludedIds: movies already compared against this one — never show the same matchup twice.
 export function pickComparisonCandidates(
   newElo: number,
   existing: { tmdbId: number; eloScore: number }[],
-  count = 4
+  count = 4,
+  excludedIds: number[] = []
 ): number[] {
   if (existing.length === 0) return []
 
-  const sorted = [...existing].sort((a, b) => a.eloScore - b.eloScore)
+  const excludeSet = new Set(excludedIds)
+  // Filter out already-compared opponents. If we've compared against everything,
+  // fall back to the full list so we never return 0 candidates.
+  const pool = existing.filter((r) => !excludeSet.has(r.tmdbId))
+  const source = pool.length > 0 ? pool : existing
+
+  const sorted = [...source].sort((a, b) => a.eloScore - b.eloScore)
   const n = sorted.length
   const candidates = new Set<number>()
 

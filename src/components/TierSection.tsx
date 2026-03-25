@@ -19,10 +19,10 @@ export default function TierSection({ tierLabel, items }: TierSectionProps) {
     <div className="flex flex-col gap-3">
       {/* Tier label */}
       <div className="flex items-center gap-3">
-        <Badge className={`px-4 py-1.5 text-sm font-bold ${tier.color} ${tier.text} border-0`}>
+        <Badge className={`px-3 py-1 text-xs font-bold tracking-wide ${tier.color} ${tier.text}`}>
           {tierLabel}
         </Badge>
-        <div className="h-px flex-1 bg-border" />
+        <div className="h-px flex-1 bg-white/5" />
         <span className="text-xs text-muted-foreground">{items.length} {items.length === 1 ? "title" : "titles"}</span>
       </div>
 

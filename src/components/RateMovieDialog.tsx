@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { getPosterUrl, getMovieDetails, getTVDetails } from "@/lib/tmdb"
+import { getPosterUrl } from "@/lib/tmdb"
 import { TIERS } from "@/lib/tiers"
 import { getTitle, type TMDBMovie, type MediaType } from "@/types"
 import { Loader2 } from "lucide-react"
@@ -63,6 +63,11 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
 
   async function handleTierPick(tierLabel: string) {
     if (saving) return
+    const seedScore = TIER_SEED_SCORES[tierLabel]
+    if (seedScore === undefined) {
+      setError("Invalid tier selection. Please try again.")
+      return
+    }
     setSaving(true)
     setActiveTier(tierLabel)
     setError(null)
@@ -74,7 +79,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
         body: JSON.stringify({
           tmdbId: movie.id,
           mediaType,
-          seedScore: TIER_SEED_SCORES[tierLabel],
+          seedScore,
         }),
       })
 
@@ -85,13 +90,8 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
 
       const data = await res.json()
 
-      if (data.candidateIds?.length > 0) {
-        const movies = await Promise.all(
-          (data.candidateIds as number[]).map((id) =>
-            mediaType === "tv" ? getTVDetails(id) : getMovieDetails(id)
-          )
-        )
-        setCandidates(movies)
+      if (data.candidates?.length > 0) {
+        setCandidates(data.candidates)
         setCurrentIndex(0)
         setStep("compare")
       } else {
@@ -108,13 +108,18 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
 
   async function handleComparison(winnerId: number, loserId: number) {
     try {
-      await fetch("/api/ratings/compare", {
+      const res = await fetch("/api/ratings/compare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ winnerId, loserId, mediaType }),
       })
-    } catch {
-      // comparison failure is non-critical — keep going
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        // Non-fatal: log the error but keep the comparison flow going
+        console.error("Comparison failed:", err.error ?? res.status)
+      }
+    } catch (err) {
+      console.error("Comparison network error:", err)
     }
 
     if (currentIndex + 1 >= candidates.length) {

@@ -59,7 +59,7 @@ export default function HomeHero({ featured }: HomeHeroProps) {
   return (
     <>
       {/* Hero section */}
-      <div className="relative h-[50vh] min-h-[320px] w-full overflow-hidden">
+      <div className="relative h-[60vh] min-h-[360px] w-full overflow-hidden md:h-[55vh]">
         {featured?.backdrop_path ? (
           <Image
             src={getBackdropUrl(featured.backdrop_path, "w1280")}
@@ -72,21 +72,23 @@ export default function HomeHero({ featured }: HomeHeroProps) {
           <div className="h-full w-full bg-gradient-to-br from-zinc-900 to-black" />
         )}
 
-        {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent" />
+        {/* Cinematic gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent" />
+        {/* Vignette edges */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_50%,rgba(0,0,0,0.5)_100%)]" />
 
         {/* Hero text + search */}
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-8 sm:px-8 md:px-12">
           {featured && !isSearching && (
             <div className="mb-5">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-blue-400">
+              <span className="mb-2 inline-flex items-center rounded-[3px] bg-blue-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
                 Trending Now
-              </p>
-              <h1 className="text-2xl font-bold text-white drop-shadow-lg sm:text-3xl md:text-4xl">
+              </span>
+              <h1 className="text-2xl font-black text-white drop-shadow-lg sm:text-3xl md:text-4xl">
                 {getTitle(featured)}
               </h1>
-              <p className="mt-1.5 line-clamp-2 max-w-lg text-sm text-white/55 drop-shadow">
+              <p className="mt-1.5 line-clamp-2 max-w-lg text-sm text-white/50 drop-shadow">
                 {featured.overview}
               </p>
             </div>
@@ -94,12 +96,12 @@ export default function HomeHero({ featured }: HomeHeroProps) {
 
           {/* Search bar */}
           <div className="relative max-w-xl">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40 pointer-events-none" />
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35 pointer-events-none" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search movies, shows, documentaries..."
-              className="h-11 w-full rounded-xl border border-white/10 bg-black/50 pl-10 pr-10 text-sm text-white placeholder:text-white/35 backdrop-blur-xl focus:border-blue-500/50 focus:bg-black/70 focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all"
+              className="h-12 w-full rounded-xl border border-white/8 bg-white/5 pl-10 pr-10 text-sm text-white placeholder:text-white/30 backdrop-blur-2xl transition-all focus:border-blue-500/35 focus:bg-white/8 focus:outline-none focus:shadow-[0_0_24px_rgba(37,99,235,0.18)]"
             />
             {query && (
               <button

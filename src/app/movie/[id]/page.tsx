@@ -32,15 +32,18 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
   const mediaType = (type === "tv" ? "tv" : "movie") as "movie" | "tv"
 
   // Fetch movie details, user rating, recommendations, and watch providers in parallel
-  let movie, existingRating, recommendations, watchProviders
+  let movie, existingRating, recommendations, watchProviders, allRatedIds
   try {
-    ;[movie, existingRating, recommendations, watchProviders] = await Promise.all([
+    ;[movie, existingRating, recommendations, watchProviders, allRatedIds] = await Promise.all([
       mediaType === "tv" ? getTVDetails(Number(id)) : getMovieDetails(Number(id)),
       prisma.rating.findFirst({ where: { tmdbId: Number(id) } }),
       mediaType === "tv"
         ? getTVRecommendations(Number(id))
         : getMovieRecommendations(Number(id)),
       getWatchProviders(Number(id), mediaType),
+      prisma.rating.findMany({ where: { mediaType }, select: { tmdbId: true } }).then(
+        (rows) => new Set(rows.map((r) => r.tmdbId))
+      ),
     ])
   } catch {
     notFound()
@@ -99,19 +102,19 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
                 className="object-cover"
               />
             </div>
-            {displayScore !== undefined && tier && (
-              <div
-                className={`absolute -bottom-3 -right-3 flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold shadow-lg ${tier.color} ${tier.text}`}
-              >
-                {displayScore.toFixed(1)}
-              </div>
-            )}
           </div>
 
           {/* Info */}
           <div className="flex flex-1 flex-col gap-3">
             <div>
-              <h1 className="text-2xl font-bold leading-tight sm:text-3xl">{title}</h1>
+              <div className="flex items-start justify-between gap-4">
+                <h1 className="text-2xl font-bold leading-tight sm:text-3xl">{title}</h1>
+                {displayScore !== undefined && tier && (
+                  <div className={`flex-shrink-0 flex h-14 w-14 items-center justify-center rounded-full shadow-lg ${tier.color}`}>
+                    <span className={`text-lg font-black ${tier.text}`}>{displayScore.toFixed(1)}</span>
+                  </div>
+                )}
+              </div>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 {year && (
                   <span className="flex items-center gap-1">
@@ -131,6 +134,12 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
                     {movie.number_of_seasons} seasons
                   </span>
                 )}
+                {movie.vote_average > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                    {movie.vote_average.toFixed(1)} TMDB
+                  </span>
+                )}
               </div>
             </div>
 
@@ -145,17 +154,6 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
               </div>
             )}
 
-            {/* Tier badge if rated */}
-            {displayScore !== undefined && tier && (
-              <div className="flex items-center gap-2">
-                <Badge className={`${tier.color} ${tier.text} border-0 px-3 py-1`}>
-                  {tier.label}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  #{displayScore.toFixed(1)} in your list
-                </span>
-              </div>
-            )}
 
             {/* Action buttons */}
             <div className="flex flex-wrap gap-2">
@@ -231,7 +229,6 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
               </div>
             )}
 
-            {/* Overview */}
             {movie.overview && (
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 {movie.overview}
@@ -247,6 +244,7 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {recResults.map((rec) => {
                 const recMediaType = getMediaType({ ...rec, media_type: mediaType })
+                const alreadyRated = (allRatedIds as Set<number>).has(rec.id)
                 return (
                   <MovieCard
                     key={rec.id}
@@ -257,9 +255,9 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
                         movie={rec}
                         mediaType={recMediaType}
                         trigger={
-                          <Button size="sm" className="h-7 w-full gap-1 text-xs">
+                          <Button size="sm" className="h-7 w-full gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0">
                             <Star className="h-3 w-3" />
-                            Rate
+                            {alreadyRated ? "Re-rank" : "Rate"}
                           </Button>
                         }
                       />

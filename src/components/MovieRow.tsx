@@ -26,7 +26,7 @@ export default function MovieRow({ title, movies, mediaType = "movie" }: MovieRo
 
   return (
     <section className="group/row relative">
-      <h2 className="mb-3 px-4 text-base font-semibold text-white sm:px-8 md:px-12">{title}</h2>
+      <h2 className="mb-3 px-4 text-base font-bold tracking-tight text-white/90 sm:px-8 md:px-12">{title}</h2>
 
       <div className="relative">
         {/* Left arrow */}
@@ -71,7 +71,10 @@ function MoviePosterCard({ movie, mediaType }: { movie: TMDBMovie; mediaType: "m
       style={{ width: "130px" }}
     >
       {/* Poster */}
-      <div className="relative overflow-hidden rounded-md" style={{ width: "130px", height: "195px" }}>
+      <div
+        className="relative overflow-hidden rounded-md transition-shadow duration-300 group-hover/card:shadow-[0_0_18px_rgba(37,99,235,0.28)]"
+        style={{ width: "130px", height: "195px" }}
+      >
         <Image
           src={getPosterUrl(movie.poster_path, "w342")}
           alt={title}
