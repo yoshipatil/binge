@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Search, X, Star, Plus } from "lucide-react"
+import toast from "react-hot-toast"
 import { getPosterUrl, getBackdropUrl } from "@/lib/tmdb"
 import { getTitle, getReleaseYear, getMediaType, type TMDBMovie } from "@/types"
 import RateMovieDialog from "@/components/RateMovieDialog"
@@ -185,11 +186,17 @@ function SearchCard({
             <button
               onClick={async (e) => {
                 e.preventDefault()
-                await fetch("/api/watchlist", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ tmdbId: movie.id, mediaType }),
-                })
+                try {
+                  const res = await fetch("/api/watchlist", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tmdbId: movie.id, mediaType }),
+                  })
+                  if (res.ok) toast.success("Added to watchlist")
+                  else toast.error("Failed to add to watchlist")
+                } catch {
+                  toast.error("Network error — try again")
+                }
               }}
               className="flex h-8 w-8 items-center justify-center rounded-full border border-white/60 text-white hover:bg-white/20 transition-colors"
             >

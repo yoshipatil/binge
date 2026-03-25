@@ -4,6 +4,7 @@ import "./globals.css";
 import NavBar from "@/components/NavBar";
 import BottomNav from "@/components/BottomNav";
 import { Analytics } from "@vercel/analytics/next";
+import { Toaster } from "react-hot-toast";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -50,6 +51,21 @@ export default function RootLayout({
           This product uses the TMDB API but is not endorsed or certified by TMDB.
         </footer>
         <BottomNav />
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: "#0e0e12",
+              color: "#fff",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "10px",
+              fontSize: "14px",
+            },
+            success: { iconTheme: { primary: "#2563EB", secondary: "#fff" } },
+            error:   { iconTheme: { primary: "#f43f5e", secondary: "#fff" } },
+          }}
+        />
         <Analytics />
       </body>
     </html>

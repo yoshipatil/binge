@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Bookmark, BookmarkCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import toast from "react-hot-toast"
 import type { MediaType } from "@/types"
 
 interface WatchlistButtonProps {
@@ -21,12 +22,13 @@ export default function WatchlistButton({
 
   async function toggle() {
     setLoading(true)
+    const wasInWatchlist = inWatchlist
     // Optimistic update
-    setInWatchlist((prev) => !prev)
+    setInWatchlist(!wasInWatchlist)
 
     try {
       let res: Response
-      if (!inWatchlist) {
+      if (!wasInWatchlist) {
         res = await fetch("/api/watchlist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -37,13 +39,16 @@ export default function WatchlistButton({
           method: "DELETE",
         })
       }
+
       if (!res.ok) {
-        // Revert optimistic update on server error
-        setInWatchlist((prev) => !prev)
+        setInWatchlist(wasInWatchlist) // revert
+        toast.error("Failed to update watchlist")
+      } else {
+        toast.success(wasInWatchlist ? "Removed from watchlist" : "Added to watchlist")
       }
     } catch {
-      // Revert on network error
-      setInWatchlist((prev) => !prev)
+      setInWatchlist(wasInWatchlist) // revert on network error
+      toast.error("Network error — try again")
     } finally {
       setLoading(false)
     }

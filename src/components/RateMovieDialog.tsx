@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button"
 import { getPosterUrl } from "@/lib/tmdb"
 import { TIERS } from "@/lib/tiers"
 import { getTitle, type TMDBMovie, type MediaType } from "@/types"
-import { Loader2 } from "lucide-react"
+import { Loader2, Trophy, Heart, Star, ThumbsUp, Minus, ThumbsDown } from "lucide-react"
+import toast from "react-hot-toast"
 
 const TIER_SEED_SCORES: Record<string, number> = {
   "All Time":        9.5,
@@ -24,13 +25,13 @@ const TIER_SEED_SCORES: Record<string, number> = {
   "Didn't Like It":  3.0,
 }
 
-const TIER_EMOJIS: Record<string, string> = {
-  "All Time":        "🏆",
-  "Loved It":        "❤️",
-  "Really Liked It": "😊",
-  "Liked It":        "👍",
-  "It Was Fine":     "😐",
-  "Didn't Like It":  "👎",
+const TIER_ICONS: Record<string, React.ElementType> = {
+  "All Time":        Trophy,
+  "Loved It":        Heart,
+  "Really Liked It": Star,
+  "Liked It":        ThumbsUp,
+  "It Was Fine":     Minus,
+  "Didn't Like It":  ThumbsDown,
 }
 
 interface RateMovieDialogProps {
@@ -96,7 +97,8 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
         setStep("compare")
       } else {
         setStep("done")
-        setTimeout(() => { setOpen(false); router.refresh() }, 900)
+        toast.success(`Ranked: ${getTitle(movie)}`)
+        setTimeout(() => { setOpen(false); router.refresh() }, 800)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Try again.")
@@ -124,7 +126,8 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
 
     if (currentIndex + 1 >= candidates.length) {
       setStep("done")
-      setTimeout(() => { setOpen(false); router.refresh() }, 900)
+      toast.success(`Ranked: ${getTitle(movie)}`)
+      setTimeout(() => { setOpen(false); router.refresh() }, 800)
     } else {
       setCurrentIndex((i) => i + 1)
     }
@@ -159,21 +162,21 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
               <div className="flex flex-col gap-2 py-1">
                 {TIERS.map((tier) => {
                   const isLoading = saving && activeTier === tier.label
+                  const TierIcon = TIER_ICONS[tier.label]
                   return (
                     <button
                       key={tier.label}
                       onClick={() => handleTierPick(tier.label)}
                       disabled={saving}
-                      className="flex items-center gap-3 rounded-xl border border-white/5 px-4 py-3.5 text-left transition-all hover:border-white/20 hover:bg-white/5 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex items-center gap-3 rounded-xl border border-white/5 px-4 py-3 text-left transition-all hover:border-white/15 hover:bg-white/5 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <span className="text-xl">
+                      <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${tier.color}`}>
                         {isLoading
-                          ? <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
-                          : TIER_EMOJIS[tier.label]
+                          ? <Loader2 className={`h-4 w-4 animate-spin ${tier.text}`} />
+                          : <TierIcon className={`h-4 w-4 ${tier.text}`} />
                         }
                       </span>
                       <span className="font-semibold text-white">{tier.label}</span>
-                      <div className={`ml-auto h-2 w-2 flex-shrink-0 rounded-full ${tier.color}`} />
                     </button>
                   )
                 })}
