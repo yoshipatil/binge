@@ -33,13 +33,17 @@ export default function StreamingFilter() {
     setOpen(false)
   }
 
-  // Close on outside click
+  // Close on outside click/touch — both mousedown (desktop) and touchstart (mobile)
   useEffect(() => {
-    function handler(e: MouseEvent) {
+    function handler(e: MouseEvent | TouchEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
+    document.addEventListener("touchstart", handler)
+    return () => {
+      document.removeEventListener("mousedown", handler)
+      document.removeEventListener("touchstart", handler)
+    }
   }, [])
 
   const label = selected.length === 0
@@ -74,7 +78,7 @@ export default function StreamingFilter() {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-xl border border-white/10 bg-zinc-900 shadow-xl">
+        <div className="absolute left-0 top-full z-[51] mt-2 w-52 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-white/10 bg-zinc-900 shadow-xl">
           <div className="p-1">
             {STREAMING_SERVICES.map((service) => {
               const active = selected.includes(service.id)

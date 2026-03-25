@@ -8,7 +8,7 @@ import WatchlistButton from "@/components/WatchlistButton"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getMediaType, type TMDBMovie } from "@/types"
-import { Star } from "lucide-react"
+import { Star, Search as SearchIcon } from "lucide-react"
 
 interface SearchResult extends TMDBMovie {
   appMediaType: "movie" | "tv" | "documentary"
@@ -76,7 +76,9 @@ export default function SearchPage() {
       {/* Empty state */}
       {!loading && !query && (
         <div className="flex flex-col items-center gap-2 py-16 text-center">
-          <p className="text-4xl">🔍</p>
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
+            <SearchIcon className="h-7 w-7 text-white/30" />
+          </div>
           <p className="text-lg font-semibold">What are you watching?</p>
           <p className="text-sm text-muted-foreground">Type to search millions of titles</p>
         </div>

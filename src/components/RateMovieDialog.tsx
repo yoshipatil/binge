@@ -168,7 +168,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
                       key={tier.label}
                       onClick={() => handleTierPick(tier.label)}
                       disabled={saving}
-                      className="flex items-center gap-3 rounded-xl border border-white/5 px-4 py-3 text-left transition-all hover:border-white/15 hover:bg-white/5 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex min-h-[44px] items-center gap-3 rounded-xl border border-white/5 px-4 py-3 text-left transition-all hover:border-white/15 hover:bg-white/5 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${tier.color}`}>
                         {isLoading
@@ -231,8 +231,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
 
               <Button
                 variant="ghost"
-                size="sm"
-                className="w-full text-white/30 hover:text-white/60"
+                className="w-full min-h-[44px] text-white/30 hover:text-white/60"
                 onClick={() => { setOpen(false); router.refresh() }}
               >
                 Skip comparisons

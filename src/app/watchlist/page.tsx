@@ -7,7 +7,7 @@ import MediaTypeTabs from "@/components/MediaTypeTabs"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { MediaType } from "@/types"
-import { Star } from "lucide-react"
+import { Star, BookmarkX } from "lucide-react"
 
 interface WatchlistPageProps {
   searchParams: Promise<{ type?: string }>
@@ -25,7 +25,9 @@ async function WatchlistGrid({ mediaType }: { mediaType: string | undefined }) {
   if (filtered.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-        <p className="text-4xl">📋</p>
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
+          <BookmarkX className="h-7 w-7 text-white/30" />
+        </div>
         <p className="text-lg font-semibold">Your watchlist is empty</p>
         <p className="text-sm text-muted-foreground">
           Add movies from Search or from any movie page.

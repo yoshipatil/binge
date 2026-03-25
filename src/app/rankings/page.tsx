@@ -7,6 +7,7 @@ import TierList from "@/components/TierList"
 import MediaTypeTabs from "@/components/MediaTypeTabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { buttonVariants } from "@/components/ui/button"
+import { Film } from "lucide-react"
 import type { RatedItem, MediaType } from "@/types"
 
 const PAGE_SIZE = 50
@@ -27,7 +28,9 @@ async function RankingsList({ mediaType, page }: { mediaType: string | undefined
   if (filtered.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-        <p className="text-4xl">🎬</p>
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
+          <Film className="h-7 w-7 text-white/30" />
+        </div>
         <p className="text-lg font-semibold">Nothing rated yet</p>
         <p className="text-sm text-muted-foreground">
           Go to Search and rate something to see it here.

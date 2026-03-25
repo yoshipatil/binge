@@ -110,8 +110,8 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
               <div className="flex items-start justify-between gap-4">
                 <h1 className="text-2xl font-bold leading-tight sm:text-3xl">{title}</h1>
                 {displayScore !== undefined && tier && (
-                  <div className={`flex-shrink-0 flex h-14 w-14 items-center justify-center rounded-full shadow-lg ${tier.color}`}>
-                    <span className={`text-lg font-black ${tier.text}`}>{displayScore.toFixed(1)}</span>
+                  <div className={`flex-shrink-0 flex h-14 w-14 items-center justify-center rounded-full shadow-lg ${tier.dotColor}`}>
+                    <span className="text-lg font-black">{displayScore.toFixed(1)}</span>
                   </div>
                 )}
               </div>
@@ -161,7 +161,7 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
                 movie={movie}
                 mediaType={appMediaType}
                 trigger={
-                  <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-500 text-white border-0">
+                  <Button className="gap-2 bg-blue-600 hover:bg-blue-500 text-white border-0">
                     <Star className="h-4 w-4" />
                     {existingRating ? "Re-rank" : "Rate This"}
                   </Button>
