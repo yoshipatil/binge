@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
+import BottomNav from "@/components/BottomNav";
 import { Analytics } from "@vercel/analytics/next";
 
 const geist = Geist({
@@ -40,12 +41,15 @@ export default function RootLayout({
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <NavBar />
-        <main className="flex-1">
+        {/* pb-20 on mobile reserves space above the fixed BottomNav; cleared on md+ */}
+        <main className="flex-1 pb-20 md:pb-0">
           {children}
         </main>
-        <footer className="border-t border-border/40 py-4 text-center text-xs text-muted-foreground">
+        {/* Footer only on desktop — bottom nav occupies that space on mobile */}
+        <footer className="hidden border-t border-border/40 py-4 text-center text-xs text-muted-foreground md:block">
           This product uses the TMDB API but is not endorsed or certified by TMDB.
         </footer>
+        <BottomNav />
         <Analytics />
       </body>
     </html>
