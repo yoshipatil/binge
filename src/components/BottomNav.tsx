@@ -3,8 +3,9 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { useSession, signOut } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { Home, Star, Bookmark, Sparkles, LogIn } from "lucide-react"
+import AccountMenu from "@/components/AccountMenu"
 
 const links = [
   { href: "/", label: "Home", icon: Home },
@@ -45,25 +46,26 @@ export default function BottomNav() {
 
         {/* Auth tab */}
         {session?.user ? (
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px]"
-          >
-            <div className="flex items-center justify-center rounded-xl p-1.5">
-              {session.user.image ? (
-                <Image
-                  src={session.user.image}
-                  alt={session.user.name ?? ""}
-                  width={22}
-                  height={22}
-                  className="rounded-full ring-1 ring-white/20"
-                />
-              ) : (
-                <div className="h-[22px] w-[22px] rounded-full bg-blue-500/30" />
-              )}
-            </div>
-            <span className="text-[10px] font-medium tracking-wide text-white/30">Me</span>
-          </button>
+          <AccountMenu
+            trigger={
+              <button className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px]">
+                <div className="flex items-center justify-center rounded-xl p-1.5">
+                  {session.user.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name ?? ""}
+                      width={22}
+                      height={22}
+                      className="rounded-full ring-1 ring-white/20"
+                    />
+                  ) : (
+                    <div className="h-[22px] w-[22px] rounded-full bg-blue-500/30" />
+                  )}
+                </div>
+                <span className="text-[10px] font-medium tracking-wide text-white/30">Me</span>
+              </button>
+            }
+          />
         ) : (
           <Link
             href="/sign-in"

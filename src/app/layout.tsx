@@ -51,9 +51,13 @@ export default async function RootLayout({
           <main className="flex-1 pb-20 md:pb-0">
             {children}
           </main>
-          {/* Footer only on desktop — bottom nav occupies that space on mobile */}
-          <footer className="hidden border-t border-border/40 py-4 text-center text-xs text-muted-foreground md:block">
+          {/* Footer — hidden on mobile (bottom nav is there), shown on desktop */}
+          <footer className="hidden border-t border-white/5 py-4 text-center text-xs text-white/25 md:block">
             This product uses the TMDB API but is not endorsed or certified by TMDB.
+            {" · "}
+            <a href="/privacy" className="underline-offset-2 hover:text-white/50 hover:underline">
+              Privacy Policy
+            </a>
           </footer>
           <BottomNav />
         </Providers>

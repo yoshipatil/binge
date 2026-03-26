@@ -4,8 +4,9 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Star, Bookmark, Sparkles, Home, LogIn, LogOut } from "lucide-react"
+import { Star, Bookmark, Sparkles, Home, LogIn } from "lucide-react"
 import BingeLogo from "@/components/BingeLogo"
+import AccountMenu from "@/components/AccountMenu"
 
 const links = [
   { href: "/", label: "Home", icon: Home },
@@ -53,24 +54,22 @@ export default function NavBar() {
         {/* Desktop auth */}
         <div className="hidden md:flex items-center gap-2">
           {session?.user ? (
-            <div className="flex items-center gap-2">
-              {session.user.image && (
-                <Image
-                  src={session.user.image}
-                  alt={session.user.name ?? ""}
-                  width={28}
-                  height={28}
-                  className="rounded-full ring-1 ring-white/10"
-                />
-              )}
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-white/40 transition-all hover:text-white/70 hover:bg-white/5"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                Sign out
-              </button>
-            </div>
+            <AccountMenu
+              trigger={
+                <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5">
+                  {session.user.image && (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name ?? ""}
+                      width={28}
+                      height={28}
+                      className="rounded-full ring-1 ring-white/10"
+                    />
+                  )}
+                  <span className="text-sm text-white/50 hover:text-white/80">{session.user.name?.split(" ")[0]}</span>
+                </button>
+              }
+            />
           ) : (
             <Link
               href="/sign-in"
