@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { auth } from "@/auth";
 import NavBar from "@/components/NavBar";
 import BottomNav from "@/components/BottomNav";
 import Providers from "@/components/Providers";
@@ -34,15 +35,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <Providers>
+        <Providers session={session}>
           <NavBar />
           {/* pb-20 on mobile reserves space above the fixed BottomNav; cleared on md+ */}
           <main className="flex-1 pb-20 md:pb-0">

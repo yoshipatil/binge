@@ -15,7 +15,7 @@ const links = [
 
 export default function BottomNav() {
   const pathname = usePathname()
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
 
   return (
     <nav
@@ -43,8 +43,8 @@ export default function BottomNav() {
           )
         })}
 
-        {/* Auth tab — hidden while session loads to avoid hydration mismatch */}
-        {status === "loading" ? null : session?.user ? (
+        {/* Auth tab */}
+        {session?.user ? (
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
             className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px]"

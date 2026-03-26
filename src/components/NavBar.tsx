@@ -16,7 +16,7 @@ const links = [
 
 export default function NavBar() {
   const pathname = usePathname()
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
 
   return (
     <nav className="sticky top-0 z-50 bg-black/70 backdrop-blur-md">
@@ -50,9 +50,9 @@ export default function NavBar() {
           })}
         </div>
 
-        {/* Desktop auth — hidden while session loads to avoid hydration mismatch */}
+        {/* Desktop auth */}
         <div className="hidden md:flex items-center gap-2">
-          {status === "loading" ? null : session?.user ? (
+          {session?.user ? (
             <div className="flex items-center gap-2">
               {session.user.image && (
                 <Image
