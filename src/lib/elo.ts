@@ -12,10 +12,13 @@ export function calculateElo(winnerElo: number, loserElo: number) {
   }
 }
 
-// Convert a 1–10 seed score into a starting ELO (800–1200 range)
-// So a movie you rate 9/10 starts with higher ELO than one you rate 5/10
+// Convert a 1–10 seed score into a starting ELO (800–1200 range) with ±25pt jitter.
+// Jitter prevents movies in the same tier from all clustering at identical ELO values,
+// which causes the first few comparisons to feel arbitrary. Small spread → faster convergence.
 export function seedEloFromScore(score: number): number {
-  return 800 + (score / 10) * 400
+  const base = 800 + (score / 10) * 400
+  const jitter = (Math.random() - 0.5) * 50 // ±25 points
+  return Math.round(base + jitter)
 }
 
 // Normalize ELO scores to a 0–10 display scale.
@@ -44,8 +47,11 @@ export function normalizeEloScores<T extends { tmdbId: number; eloScore: number 
 }
 
 // Pick the best candidates to compare against when you add a new movie.
-// Picks from across the ELO range (top, bottom, median, closest neighbors)
-// so a few comparisons are enough to place the movie accurately.
+// Strategy: always include the closest above/below neighbor (accurate placement),
+// plus weighted random samples from the rest of the pool (diversity).
+// This is better than always picking median/top/bottom because:
+//   - Deterministic picks create "hot paths" where the same pairs are always compared
+//   - Weighted randomness gives the new movie exposure to a wider range over time
 // excludedIds: movies already compared against this one — never show the same matchup twice.
 export function pickComparisonCandidates(
   newElo: number,
@@ -62,20 +68,38 @@ export function pickComparisonCandidates(
   const source = pool.length > 0 ? pool : existing
 
   const sorted = [...source].sort((a, b) => a.eloScore - b.eloScore)
-  const n = sorted.length
   const candidates = new Set<number>()
 
-  // Closest above the new movie
+  // Always include the closest neighbor above and below — these are the most informative
+  // comparisons for accurate placement (binary search property)
   const above = sorted.filter((r) => r.eloScore >= newElo)
   if (above.length > 0) candidates.add(above[0].tmdbId)
 
-  // Closest below the new movie
   const below = sorted.filter((r) => r.eloScore < newElo)
   if (below.length > 0) candidates.add(below[below.length - 1].tmdbId)
 
-  candidates.add(sorted[n - 1].tmdbId) // top of list
-  candidates.add(sorted[0].tmdbId) // bottom of list
-  if (n > 2) candidates.add(sorted[Math.floor(n / 2)].tmdbId) // median
+  // Fill remaining slots with weighted random samples from the rest of the pool.
+  // Weight = 1 / (1 + distance) so closer movies are more likely but not certain.
+  // This adds diversity vs. always picking the same top/median/bottom.
+  const remaining = sorted.filter((r) => !candidates.has(r.tmdbId))
+  if (remaining.length > 0 && candidates.size < count) {
+    const weights = remaining.map((r) => 1 / (1 + Math.abs(r.eloScore - newElo)))
+    const totalWeight = weights.reduce((a, b) => a + b, 0)
+
+    while (candidates.size < count && remaining.length > candidates.size) {
+      let rand = Math.random() * totalWeight
+      for (let i = 0; i < remaining.length; i++) {
+        rand -= weights[i]
+        if (rand <= 0 && !candidates.has(remaining[i].tmdbId)) {
+          candidates.add(remaining[i].tmdbId)
+          break
+        }
+      }
+      // Safety: if weighted sampling stalls, just add the first unselected item
+      const unselected = remaining.find((r) => !candidates.has(r.tmdbId))
+      if (unselected) candidates.add(unselected.tmdbId)
+    }
+  }
 
   return [...candidates].slice(0, count)
 }

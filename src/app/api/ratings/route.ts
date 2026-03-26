@@ -45,7 +45,8 @@ export async function POST(request: NextRequest) {
 
     const rating = await prisma.rating.upsert({
       where: { tmdbId_mediaType: { tmdbId: Number(tmdbId), mediaType } },
-      update: { seedScore: roundedScore, review: review ?? null, updatedAt: new Date() },
+      // On re-rate: reset eloScore to the new tier's seed so prior comparisons don't bleed in
+      update: { seedScore: roundedScore, eloScore, review: review ?? null, updatedAt: new Date() },
       create: {
         tmdbId: Number(tmdbId),
         mediaType,

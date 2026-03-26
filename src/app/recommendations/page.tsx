@@ -20,12 +20,12 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
     prisma.rating.findMany({
       where: { mediaType: { in: ["movie", "documentary"] } },
       orderBy: { eloScore: "desc" },
-      take: 5,
+      take: 20,
     }),
     prisma.rating.findMany({
       where: { mediaType: "tv" },
       orderBy: { eloScore: "desc" },
-      take: 5,
+      take: 20,
     }),
   ])
 
@@ -54,7 +54,7 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
         results.push(movie)
       }
     })
-    return results.sort((a, b) => b.vote_average - a.vote_average).slice(0, 20)
+    return results.sort((a, b) => b.vote_average - a.vote_average).slice(0, 40)
   }
 
   let movieRecommendations = processRecs(movieRecs)
