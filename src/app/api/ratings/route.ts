@@ -1,18 +1,25 @@
-// GET  /api/ratings          — all your ratings with normalized display scores
-// POST /api/ratings          — rate a new movie (or update existing)
+// GET    /api/ratings          — your ratings with normalized display scores
+// POST   /api/ratings          — rate a new movie (or update existing)
 // DELETE /api/ratings?tmdbId=&mediaType= — remove a rating
 import { NextRequest, NextResponse } from "next/server"
+import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { seedEloFromScore, normalizeEloScores, pickComparisonCandidates } from "@/lib/elo"
 import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
 
 export async function GET() {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const ratings = await prisma.rating.findMany({
+      where: { userId },
       orderBy: { eloScore: "desc" },
     })
 
-    // Group by mediaType, normalize ELO within each group
     const grouped: Record<string, typeof ratings> = {}
     ratings.forEach((r) => {
       if (!grouped[r.mediaType]) grouped[r.mediaType] = []
@@ -31,6 +38,12 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const body = await request.json()
     const { tmdbId, mediaType, seedScore, review } = body
@@ -44,10 +57,10 @@ export async function POST(request: NextRequest) {
     const eloScore = seedEloFromScore(roundedScore)
 
     const rating = await prisma.rating.upsert({
-      where: { tmdbId_mediaType: { tmdbId: Number(tmdbId), mediaType } },
-      // On re-rate: reset eloScore to the new tier's seed so prior comparisons don't bleed in
+      where: { userId_tmdbId_mediaType: { userId, tmdbId: Number(tmdbId), mediaType } },
       update: { seedScore: roundedScore, eloScore, review: review ?? null, updatedAt: new Date() },
       create: {
+        userId,
         tmdbId: Number(tmdbId),
         mediaType,
         seedScore: roundedScore,
@@ -56,14 +69,14 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Get all existing ratings and prior comparisons for this movie in parallel
     const [existing, priorComparisons] = await Promise.all([
       prisma.rating.findMany({
-        where: { mediaType, NOT: { tmdbId: Number(tmdbId) } },
+        where: { userId, mediaType, NOT: { tmdbId: Number(tmdbId) } },
         select: { tmdbId: true, eloScore: true },
       }),
       prisma.comparison.findMany({
         where: {
+          userId,
           mediaType,
           OR: [{ winnerTmdbId: Number(tmdbId) }, { loserTmdbId: Number(tmdbId) }],
         },
@@ -71,14 +84,12 @@ export async function POST(request: NextRequest) {
       }),
     ])
 
-    // Build the set of movies already compared against this one so we don't repeat matchups
     const alreadyComparedIds = priorComparisons.map((c) =>
       c.winnerTmdbId === Number(tmdbId) ? c.loserTmdbId : c.winnerTmdbId
     )
 
     const candidateIds = pickComparisonCandidates(eloScore, existing, 4, alreadyComparedIds)
 
-    // Fetch candidate movie details server-side so the client doesn't need the TMDB API key
     const candidates = await Promise.all(
       candidateIds.map((id) =>
         (mediaType === "tv" ? getTVDetails(id) : getMovieDetails(id)).catch(() => null)
@@ -93,6 +104,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const tmdbId = request.nextUrl.searchParams.get("tmdbId")
     const mediaType = request.nextUrl.searchParams.get("mediaType")
@@ -102,7 +119,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await prisma.rating.delete({
-      where: { tmdbId_mediaType: { tmdbId: Number(tmdbId), mediaType } },
+      where: { userId_tmdbId_mediaType: { userId, tmdbId: Number(tmdbId), mediaType } },
     })
 
     return NextResponse.json({ success: true })

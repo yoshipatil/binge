@@ -1,5 +1,7 @@
 import { Suspense } from "react"
 import Link from "next/link"
+import { auth } from "@/auth"
+import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { normalizeEloScores } from "@/lib/elo"
 import { getMultipleMovies } from "@/lib/tmdb"
@@ -16,8 +18,9 @@ interface RankingsPageProps {
   searchParams: Promise<{ type?: string; page?: string }>
 }
 
-async function RankingsList({ mediaType, page }: { mediaType: string | undefined; page: number }) {
+async function RankingsList({ mediaType, page, userId }: { mediaType: string | undefined; page: number; userId: string }) {
   const allRatings = await prisma.rating.findMany({
+    where: { userId },
     orderBy: { eloScore: "desc" },
   })
 
@@ -110,6 +113,9 @@ async function RankingsList({ mediaType, page }: { mediaType: string | undefined
 }
 
 export default async function RankingsPage({ searchParams }: RankingsPageProps) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+
   const { type, page: pageParam } = await searchParams
   const page = parseInt(pageParam ?? "1", 10)
 
@@ -139,7 +145,7 @@ export default async function RankingsPage({ searchParams }: RankingsPageProps) 
           </div>
         }
       >
-        <RankingsList mediaType={type} page={page} />
+        <RankingsList mediaType={type} page={page} userId={session.user.id} />
       </Suspense>
     </div>
   )

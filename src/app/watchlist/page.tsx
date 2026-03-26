@@ -1,4 +1,6 @@
 import { Suspense } from "react"
+import { auth } from "@/auth"
+import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { getMultipleMovies } from "@/lib/tmdb"
 import MovieCard from "@/components/MovieCard"
@@ -13,8 +15,9 @@ interface WatchlistPageProps {
   searchParams: Promise<{ type?: string }>
 }
 
-async function WatchlistGrid({ mediaType }: { mediaType: string | undefined }) {
+async function WatchlistGrid({ mediaType, userId }: { mediaType: string | undefined; userId: string }) {
   const allItems = await prisma.watchlist.findMany({
+    where: { userId },
     orderBy: { addedAt: "desc" },
   })
 
@@ -66,6 +69,9 @@ async function WatchlistGrid({ mediaType }: { mediaType: string | undefined }) {
 }
 
 export default async function WatchlistPage({ searchParams }: WatchlistPageProps) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+
   const { type } = await searchParams
 
   return (
@@ -92,7 +98,7 @@ export default async function WatchlistPage({ searchParams }: WatchlistPageProps
           </div>
         }
       >
-        <WatchlistGrid mediaType={type} />
+        <WatchlistGrid mediaType={type} userId={session.user.id} />
       </Suspense>
     </div>
   )

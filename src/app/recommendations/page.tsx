@@ -1,4 +1,6 @@
 import { Suspense } from "react"
+import { auth } from "@/auth"
+import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { getMovieRecommendations, getTVRecommendations, getWatchProvidersForMany } from "@/lib/tmdb"
 import MovieCard from "@/components/MovieCard"
@@ -14,24 +16,28 @@ interface RecsPageProps {
 }
 
 export default async function RecommendationsPage({ searchParams }: RecsPageProps) {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
+  const userId = session.user.id
+
   const { streaming } = await searchParams
 
   const [topMovies, topTV] = await Promise.all([
     prisma.rating.findMany({
-      where: { mediaType: { in: ["movie", "documentary"] } },
+      where: { userId, mediaType: { in: ["movie", "documentary"] } },
       orderBy: { eloScore: "desc" },
       take: 20,
     }),
     prisma.rating.findMany({
-      where: { mediaType: "tv" },
+      where: { userId, mediaType: "tv" },
       orderBy: { eloScore: "desc" },
       take: 20,
     }),
   ])
 
   const [allRatings, allWatchlist] = await Promise.all([
-    prisma.rating.findMany({ select: { tmdbId: true } }),
-    prisma.watchlist.findMany({ select: { tmdbId: true } }),
+    prisma.rating.findMany({ where: { userId }, select: { tmdbId: true } }),
+    prisma.watchlist.findMany({ where: { userId }, select: { tmdbId: true } }),
   ])
 
   const watchlistIds = new Set(allWatchlist.map((w) => w.tmdbId))

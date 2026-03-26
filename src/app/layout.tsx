@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
 import BottomNav from "@/components/BottomNav";
+import Providers from "@/components/Providers";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "react-hot-toast";
 
@@ -41,16 +42,18 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <NavBar />
-        {/* pb-20 on mobile reserves space above the fixed BottomNav; cleared on md+ */}
-        <main className="flex-1 pb-20 md:pb-0">
-          {children}
-        </main>
-        {/* Footer only on desktop — bottom nav occupies that space on mobile */}
-        <footer className="hidden border-t border-border/40 py-4 text-center text-xs text-muted-foreground md:block">
-          This product uses the TMDB API but is not endorsed or certified by TMDB.
-        </footer>
-        <BottomNav />
+        <Providers>
+          <NavBar />
+          {/* pb-20 on mobile reserves space above the fixed BottomNav; cleared on md+ */}
+          <main className="flex-1 pb-20 md:pb-0">
+            {children}
+          </main>
+          {/* Footer only on desktop — bottom nav occupies that space on mobile */}
+          <footer className="hidden border-t border-border/40 py-4 text-center text-xs text-muted-foreground md:block">
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </footer>
+          <BottomNav />
+        </Providers>
         <Toaster
           position="top-center"
           toastOptions={{

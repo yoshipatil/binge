@@ -1,12 +1,20 @@
-// GET    /api/watchlist              — all watchlist items
+// GET    /api/watchlist              — your watchlist items
 // POST   /api/watchlist              — add to watchlist { tmdbId, mediaType }
 // DELETE /api/watchlist?tmdbId=&mediaType= — remove from watchlist
 import { NextRequest, NextResponse } from "next/server"
+import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 
 export async function GET() {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const items = await prisma.watchlist.findMany({
+      where: { userId },
       orderBy: { addedAt: "desc" },
     })
     return NextResponse.json(items)
@@ -17,6 +25,12 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const { tmdbId, mediaType } = await request.json()
 
@@ -25,9 +39,9 @@ export async function POST(request: NextRequest) {
     }
 
     const item = await prisma.watchlist.upsert({
-      where: { tmdbId_mediaType: { tmdbId: Number(tmdbId), mediaType } },
+      where: { userId_tmdbId_mediaType: { userId, tmdbId: Number(tmdbId), mediaType } },
       update: {},
-      create: { tmdbId: Number(tmdbId), mediaType },
+      create: { userId, tmdbId: Number(tmdbId), mediaType },
     })
 
     return NextResponse.json(item)
@@ -38,6 +52,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  const userId = session.user.id
+
   try {
     const tmdbId = request.nextUrl.searchParams.get("tmdbId")
     const mediaType = request.nextUrl.searchParams.get("mediaType")
@@ -47,7 +67,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await prisma.watchlist.delete({
-      where: { tmdbId_mediaType: { tmdbId: Number(tmdbId), mediaType } },
+      where: { userId_tmdbId_mediaType: { userId, tmdbId: Number(tmdbId), mediaType } },
     })
 
     return NextResponse.json({ success: true })
