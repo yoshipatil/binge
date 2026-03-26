@@ -120,12 +120,12 @@ export default async function RankingsPage({ searchParams }: RankingsPageProps) 
   const page = parseInt(pageParam ?? "1", 10)
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="mb-6 flex flex-col gap-4">
+    <div className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">
+      <div className="mb-8 flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Your Rankings</h1>
-          <p className="text-sm text-muted-foreground">
-            Ranked by your ELO score — updated dynamically as you compare
+          <h1 className="text-2xl font-black tracking-tight">Your Rankings</h1>
+          <p className="mt-0.5 text-sm text-white/40">
+            Ranked by ELO — updated as you compare
           </p>
         </div>
         <Suspense fallback={null}>

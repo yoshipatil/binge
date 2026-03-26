@@ -1,5 +1,6 @@
 import Image from "next/image"
 import { notFound } from "next/navigation"
+import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import {
   getMovieDetails,
@@ -30,20 +31,24 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
   const { id } = await params
   const { type } = await searchParams
   const mediaType = (type === "tv" ? "tv" : "movie") as "movie" | "tv"
+  const session = await auth()
+  const userId = session?.user?.id ?? ""
 
   // Fetch movie details, user rating, recommendations, and watch providers in parallel
   let movie, existingRating, recommendations, watchProviders, allRatedIds
   try {
     ;[movie, existingRating, recommendations, watchProviders, allRatedIds] = await Promise.all([
       mediaType === "tv" ? getTVDetails(Number(id)) : getMovieDetails(Number(id)),
-      prisma.rating.findFirst({ where: { tmdbId: Number(id) } }),
+      userId ? prisma.rating.findFirst({ where: { userId, tmdbId: Number(id) } }) : null,
       mediaType === "tv"
         ? getTVRecommendations(Number(id))
         : getMovieRecommendations(Number(id)),
       getWatchProviders(Number(id), mediaType),
-      prisma.rating.findMany({ where: { mediaType }, select: { tmdbId: true } }).then(
-        (rows) => new Set(rows.map((r) => r.tmdbId))
-      ),
+      userId
+        ? prisma.rating.findMany({ where: { userId, mediaType }, select: { tmdbId: true } }).then(
+            (rows) => new Set(rows.map((r) => r.tmdbId))
+          )
+        : new Set<number>(),
     ])
   } catch {
     notFound()
@@ -51,18 +56,18 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
 
   // Get normalized display score if rated
   let displayScore: number | undefined
-  if (existingRating) {
+  if (existingRating && userId) {
     const allRatingsForType = await prisma.rating.findMany({
-      where: { mediaType: existingRating.mediaType },
+      where: { userId, mediaType: existingRating.mediaType },
     })
     const normalized = normalizeEloScores(allRatingsForType)
     const found = normalized.find((r) => r.tmdbId === Number(id))
     displayScore = found?.displayScore
   }
 
-  const isInWatchlist = !!(await prisma.watchlist.findFirst({
-    where: { tmdbId: Number(id) },
-  }))
+  const isInWatchlist = userId
+    ? !!(await prisma.watchlist.findFirst({ where: { userId, tmdbId: Number(id) } }))
+    : false
 
   const title = getTitle(movie)
   const year = getReleaseYear(movie)
@@ -78,7 +83,7 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
     <div className="min-h-screen">
       {/* Backdrop */}
       {movie.backdrop_path && (
-        <div className="relative h-64 w-full overflow-hidden sm:h-80">
+        <div className="relative h-72 w-full overflow-hidden sm:h-96">
           <Image
             src={getBackdropUrl(movie.backdrop_path)}
             alt={title}
@@ -86,15 +91,16 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
         </div>
       )}
 
-      <div className="mx-auto max-w-5xl px-4 py-6">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:-mt-24 relative z-10">
         <div className="flex gap-6">
           {/* Poster */}
           <div className="relative hidden flex-shrink-0 sm:block">
-            <div className="relative h-60 w-40 overflow-hidden rounded-lg shadow-xl">
+            <div className="relative h-64 w-44 overflow-hidden rounded-xl shadow-2xl ring-1 ring-white/10">
               <Image
                 src={getPosterUrl(movie.poster_path, "w342")}
                 alt={title}
@@ -108,14 +114,14 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
           <div className="flex flex-1 flex-col gap-3">
             <div>
               <div className="flex items-start justify-between gap-4">
-                <h1 className="text-2xl font-bold leading-tight sm:text-3xl">{title}</h1>
+                <h1 className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">{title}</h1>
                 {displayScore !== undefined && tier && (
                   <div className={`flex-shrink-0 flex h-14 w-14 items-center justify-center rounded-full shadow-lg ${tier.dotColor}`}>
                     <span className="text-lg font-black">{displayScore.toFixed(1)}</span>
                   </div>
                 )}
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <div className="mt-1.5 flex flex-wrap items-center gap-2.5 text-sm text-white/40">
                 {year && (
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3.5 w-3.5" />
@@ -230,7 +236,7 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
             )}
 
             {movie.overview && (
-              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-2 text-sm leading-relaxed text-white/45">
                 {movie.overview}
               </p>
             )}
@@ -239,8 +245,8 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
 
         {/* Recommendations */}
         {recResults.length > 0 && (
-          <div className="mt-12">
-            <h2 className="mb-4 text-lg font-semibold">More Like This</h2>
+          <div className="mt-14">
+            <h2 className="mb-4 text-base font-bold tracking-tight text-white/90">More Like This</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {recResults.map((rec) => {
                 const recMediaType = getMediaType({ ...rec, media_type: mediaType })

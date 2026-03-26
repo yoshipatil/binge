@@ -56,11 +56,11 @@ export default function WatchlistButton({
 
   return (
     <Button
-      variant={inWatchlist ? "default" : "outline"}
+      variant="outline"
       size="sm"
       onClick={toggle}
       disabled={loading}
-      className="gap-2"
+      className={`gap-2 border-white/10 ${inWatchlist ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"}`}
     >
       {inWatchlist ? (
         <>

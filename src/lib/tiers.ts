@@ -1,6 +1,5 @@
 // Tier definitions — single source of truth for ranking labels and colors
 // Glass-badge palette: transparent bg + colored border + colored text
-// Reads as color-coded on any dark surface without being garish
 // dotColor = solid fill used for the circular score badge on MovieCard posters
 
 export type Tier = {
@@ -11,17 +10,19 @@ export type Tier = {
   text: string  // badge text color
   border: string
   dotColor: string // solid color for circular score badge
+  description: string // short helper shown in the tier picker
 }
 
 export const TIERS: Tier[] = [
   {
-    label: "All Time",
+    label: "All-Time",
     min: 9.0,
     max: 10.1,
     color: "bg-amber-500/15 border border-amber-500/40",
     text: "text-amber-400",
     border: "border-amber-500/40",
     dotColor: "bg-amber-500 text-black",
+    description: "One of the best you've ever seen",
   },
   {
     label: "Loved It",
@@ -31,33 +32,37 @@ export const TIERS: Tier[] = [
     text: "text-blue-400",
     border: "border-blue-500/40",
     dotColor: "bg-blue-600 text-white",
+    description: "Would definitely recommend",
   },
   {
-    label: "Really Liked It",
+    label: "Really Good",
     min: 7.0,
     max: 8.0,
     color: "bg-indigo-500/15 border border-indigo-500/30",
     text: "text-indigo-400",
     border: "border-indigo-500/30",
     dotColor: "bg-indigo-600 text-white",
+    description: "Enjoyed it a lot",
   },
   {
-    label: "Liked It",
+    label: "Good",
     min: 6.0,
     max: 7.0,
     color: "bg-emerald-500/15 border border-emerald-500/30",
     text: "text-emerald-400",
     border: "border-emerald-500/30",
     dotColor: "bg-emerald-600 text-white",
+    description: "Solid, worth the watch",
   },
   {
-    label: "It Was Fine",
+    label: "Mid",
     min: 5.0,
     max: 6.0,
     color: "bg-zinc-700/30 border border-zinc-600/40",
     text: "text-zinc-400",
     border: "border-zinc-600/40",
     dotColor: "bg-zinc-600 text-white",
+    description: "It was okay, nothing special",
   },
   {
     label: "Didn't Like It",
@@ -67,6 +72,7 @@ export const TIERS: Tier[] = [
     text: "text-rose-400/80",
     border: "border-rose-500/25",
     dotColor: "bg-rose-700 text-white",
+    description: "Not for you",
   },
 ]
 

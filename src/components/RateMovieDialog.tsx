@@ -19,25 +19,24 @@ import {
 } from "lucide-react"
 import toast from "react-hot-toast"
 
-// Cinematic easing — fast out, natural settle (from ui-ux-pro-max Modern Dark Cinema style)
 const ease = [0.16, 1, 0.3, 1] as const
 
 const TIER_SEED_SCORES: Record<string, number> = {
-  "All Time":        9.5,
-  "Loved It":        8.5,
-  "Really Liked It": 7.5,
-  "Liked It":        6.5,
-  "It Was Fine":     5.5,
-  "Didn't Like It":  3.0,
+  "All-Time":       9.5,
+  "Loved It":       8.5,
+  "Really Good":    7.5,
+  "Good":           6.5,
+  "Mid":            5.5,
+  "Didn't Like It": 3.0,
 }
 
 const TIER_ICONS: Record<string, React.ElementType> = {
-  "All Time":        Trophy,
-  "Loved It":        Heart,
-  "Really Liked It": Star,
-  "Liked It":        ThumbsUp,
-  "It Was Fine":     Minus,
-  "Didn't Like It":  ThumbsDown,
+  "All-Time":       Trophy,
+  "Loved It":       Heart,
+  "Really Good":    Star,
+  "Good":           ThumbsUp,
+  "Mid":            Minus,
+  "Didn't Like It": ThumbsDown,
 }
 
 interface RateMovieDialogProps {
@@ -144,7 +143,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
       </span>
 
       <Dialog open={open} onOpenChange={(o) => { if (!o) setOpen(false) }}>
-        <DialogContent className="border-white/10 bg-zinc-950 text-white sm:max-w-md overflow-hidden">
+        <DialogContent className="border-white/10 bg-zinc-950 text-white sm:max-w-md overflow-hidden p-0">
           <AnimatePresence mode="wait">
 
             {/* ── Tier picker ── */}
@@ -155,19 +154,35 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.18, ease }}
+                className="p-6"
               >
-                <DialogHeader>
-                  <DialogTitle className="text-center text-white">How was it?</DialogTitle>
-                  <p className="text-center text-sm text-white/40">{getTitle(movie)}</p>
-                </DialogHeader>
+                {/* Movie context — poster + title */}
+                <div className="mb-4 flex items-center gap-3">
+                  {movie.poster_path && (
+                    <div className="relative h-16 w-11 flex-shrink-0 overflow-hidden rounded-md bg-zinc-800">
+                      <Image
+                        src={getPosterUrl(movie.poster_path, "w154")}
+                        alt={getTitle(movie)}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <DialogHeader className="p-0">
+                      <DialogTitle className="text-left text-base text-white leading-tight">{getTitle(movie)}</DialogTitle>
+                    </DialogHeader>
+                    <p className="mt-0.5 text-sm text-white/40">How was it?</p>
+                  </div>
+                </div>
 
                 {error && (
-                  <p className="mt-2 rounded-lg bg-red-500/10 px-4 py-2 text-center text-sm text-red-400">
+                  <p className="mb-3 rounded-lg bg-red-500/10 px-4 py-2 text-center text-sm text-red-400">
                     {error}
                   </p>
                 )}
 
-                <div className="flex flex-col gap-2 py-2">
+                <div className="flex flex-col gap-1.5">
                   {TIERS.map((tier) => {
                     const isLoading = saving && activeTier === tier.label
                     const TierIcon = TIER_ICONS[tier.label]
@@ -178,15 +193,18 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
                         disabled={saving}
                         whileTap={{ scale: 0.98 }}
                         transition={{ duration: 0.1 }}
-                        className="flex min-h-[44px] items-center gap-3 rounded-xl border border-white/5 px-4 py-3 text-left transition-colors hover:border-white/15 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                        className={`flex min-h-[52px] items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40 ${tier.border}`}
                       >
-                        <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${tier.color}`}>
+                        <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${tier.color}`}>
                           {isLoading
                             ? <Loader2 className={`h-4 w-4 animate-spin ${tier.text}`} />
                             : <TierIcon className={`h-4 w-4 ${tier.text}`} />
                           }
                         </span>
-                        <span className="font-semibold text-white">{tier.label}</span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-white">{tier.label}</span>
+                          <span className="text-xs text-white/30">{tier.description}</span>
+                        </div>
                       </motion.button>
                     )
                   })}
@@ -202,13 +220,14 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2, ease }}
+                className="p-6"
               >
                 <DialogHeader>
                   <DialogTitle className="text-center text-white">Which did you prefer?</DialogTitle>
                 </DialogHeader>
 
                 {/* Progress bar */}
-                <div className="flex flex-col gap-1">
+                <div className="mt-3 flex flex-col gap-1">
                   <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
                     <motion.div
                       className="h-1 rounded-full bg-blue-500"
@@ -223,7 +242,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
                 </div>
 
                 {/* Poster pair */}
-                <div className="flex gap-3">
+                <div className="mt-4 flex gap-3">
                   {([
                     { m: movie,    onPick: () => handleComparison(movie.id, opponent.id) },
                     { m: opponent, onPick: () => handleComparison(opponent.id, movie.id) },
@@ -253,7 +272,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
 
                 <Button
                   variant="ghost"
-                  className="w-full min-h-[44px] text-white/30 hover:text-white/60"
+                  className="mt-3 w-full min-h-[44px] text-white/30 hover:text-white/60"
                   onClick={() => { setOpen(false); router.refresh() }}
                 >
                   Skip comparisons
@@ -269,21 +288,21 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2, ease }}
-                className="flex flex-col items-center gap-4 py-8"
+                className="flex flex-col items-center gap-4 py-10 px-6"
               >
                 <motion.div
                   initial={{ scale: 0, rotate: -15 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ delay: 0.05, type: "spring", stiffness: 280, damping: 22 }}
-                  className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-600"
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600"
                 >
-                  <CheckCircle2 className="h-8 w-8 text-white" />
+                  <CheckCircle2 className="h-7 w-7 text-white" />
                 </motion.div>
                 <motion.p
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15, duration: 0.2, ease }}
-                  className="text-lg font-semibold text-white"
+                  className="text-base font-semibold text-white"
                 >
                   Added to your rankings
                 </motion.p>

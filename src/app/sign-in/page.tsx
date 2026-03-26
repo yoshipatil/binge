@@ -11,25 +11,27 @@ function SignInForm() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-4">
-      {/* Subtle radial glow behind the card */}
+      {/* Cinematic radial glow */}
       <div className="pointer-events-none fixed inset-0 flex items-center justify-center">
-        <div className="h-[400px] w-[400px] rounded-full bg-blue-600/5 blur-[120px]" />
+        <div className="h-[500px] w-[500px] rounded-full bg-blue-600/6 blur-[140px]" />
       </div>
+      {/* Top vignette */}
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.6)_100%)]" />
 
-      <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-8">
+      <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-10">
         {/* Logo */}
-        <BingeLogo size={40} variant="full" />
+        <BingeLogo size={44} variant="full" />
 
         {/* Card */}
-        <div className="w-full rounded-2xl border border-white/8 bg-white/[0.03] p-8 backdrop-blur-sm">
-          <div className="mb-6 text-center">
-            <h1 className="text-xl font-bold tracking-tight text-white">Welcome back</h1>
-            <p className="mt-1 text-sm text-white/40">Sign in to see your rankings</p>
+        <div className="w-full rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 backdrop-blur-sm">
+          <div className="mb-8 text-center">
+            <h1 className="text-xl font-black tracking-tight text-white">Welcome to Binge</h1>
+            <p className="mt-1.5 text-sm text-white/35">Sign in to rank your favorites</p>
           </div>
 
           <button
             onClick={() => signIn("google", { callbackUrl })}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-all duration-150 hover:border-white/20 hover:bg-white/10 active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm font-medium text-white transition-all duration-200 hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.98]"
           >
             {/* Google "G" logo */}
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -42,7 +44,7 @@ function SignInForm() {
           </button>
         </div>
 
-        <p className="text-center text-xs text-white/20">
+        <p className="text-center text-xs text-white/15">
           Your rankings are private and belong only to you.
         </p>
       </div>

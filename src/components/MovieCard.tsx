@@ -1,7 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
 import { Tv, Film, FileVideo } from "lucide-react"
 import { getPosterUrl } from "@/lib/tmdb"
 import { getTier, UNRATED } from "@/lib/tiers"
@@ -33,22 +32,22 @@ export default function MovieCard({ movie, mediaType, displayScore, actions }: M
   const MediaIcon = mediaIcons[mediaType]
 
   return (
-    <Card className="group relative flex flex-col overflow-hidden transition-shadow hover:shadow-lg">
+    <div className="group relative flex flex-col overflow-hidden rounded-lg bg-white/[0.02] transition-all duration-300 hover:bg-white/[0.05] hover:shadow-[0_0_20px_rgba(37,99,235,0.12)]">
       <Link href={`/movie/${movie.id}?type=${mediaType === "documentary" ? "movie" : mediaType}`}>
         {/* Poster */}
-        <div className="relative aspect-[2/3] w-full bg-muted">
+        <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-900">
           <Image
             src={getPosterUrl(movie.poster_path)}
             alt={title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-            className="object-cover transition-opacity group-hover:opacity-90"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
 
           {/* Score badge — bottom right of poster */}
           {displayScore !== undefined && tier && (
             <div
-              className={`absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold shadow-md ${tier.dotColor}`}
+              className={`absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full text-xs font-black shadow-lg ring-1 ring-black/20 ${tier.dotColor}`}
             >
               {displayScore.toFixed(1)}
             </div>
@@ -58,9 +57,9 @@ export default function MovieCard({ movie, mediaType, displayScore, actions }: M
           <div className="absolute top-2 left-2">
             <Badge
               variant="secondary"
-              className="flex items-center gap-1 bg-black/60 text-white text-xs"
+              className="flex items-center gap-1 border-0 bg-black/60 text-white/80 text-[10px] backdrop-blur-sm"
             >
-              <MediaIcon className="h-3 w-3" />
+              <MediaIcon className="h-2.5 w-2.5" />
               {mediaLabels[mediaType]}
             </Badge>
           </div>
@@ -68,28 +67,26 @@ export default function MovieCard({ movie, mediaType, displayScore, actions }: M
       </Link>
 
       {/* Info */}
-      <div className="flex flex-col gap-1 p-3">
+      <div className="flex flex-col gap-1 p-2.5">
         <Link href={`/movie/${movie.id}?type=${mediaType === "documentary" ? "movie" : mediaType}`}>
-          <p className="line-clamp-2 text-sm font-semibold leading-tight hover:underline">
+          <p className="line-clamp-2 text-[13px] font-semibold leading-tight text-white/90 transition-colors group-hover:text-white">
             {title}
           </p>
         </Link>
 
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">{year}</span>
+          <span className="text-[11px] text-white/35">{year}</span>
           {tier ? (
-            <Badge className={`text-xs ${tier.color} ${tier.text}`}>
+            <span className={`text-[10px] font-semibold ${tier.text}`}>
               {tier.label}
-            </Badge>
+            </span>
           ) : (
-            <Badge className={`text-xs ${UNRATED.color} ${UNRATED.text}`}>
-              Unrated
-            </Badge>
+            <span className="text-[10px] text-white/20">Unrated</span>
           )}
         </div>
 
-        {actions && <div className="mt-1">{actions}</div>}
+        {actions && <div className="mt-1.5">{actions}</div>}
       </div>
-    </Card>
+    </div>
   )
 }

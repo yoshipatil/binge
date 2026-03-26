@@ -24,7 +24,7 @@ export default function BottomNav() {
     >
       <div className="h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
 
-      <div className="flex items-center justify-around bg-black/85 px-2 backdrop-blur-xl">
+      <div className="flex items-center justify-around bg-black/90 px-2 backdrop-blur-xl">
         {links.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/")
           return (

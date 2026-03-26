@@ -25,7 +25,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     <div className="min-h-screen bg-black">
       <HomeHero featured={featured} />
 
-      <div id="home-rows" className="pb-16 pt-6">
+      <div id="home-rows" className="pb-24 pt-6 md:pb-16">
         <div className="px-6 pb-4">
           <Suspense fallback={null}>
             <StreamingFilter />

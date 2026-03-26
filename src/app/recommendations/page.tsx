@@ -93,7 +93,7 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
             <Sparkles className="h-7 w-7 text-white/30" />
           </div>
           <p className="text-lg font-semibold">Rate more to unlock recommendations</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-white/40">
             Rate at least a few titles and Binge will find what to watch next.
           </p>
         </div>
@@ -102,8 +102,8 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="mb-6 flex flex-col gap-4">
+    <div className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">
+      <div className="mb-8 flex flex-col gap-4">
         <PageHeader />
         <Suspense fallback={null}>
           <StreamingFilter />
@@ -116,7 +116,7 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
             <Tv className="h-7 w-7 text-white/30" />
           </div>
           <p className="text-lg font-semibold">Nothing here for this service</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-white/40">
             Try a different streaming filter or clear it.
           </p>
         </div>
@@ -195,7 +195,7 @@ function PageHeader() {
   return (
     <div>
       <h1 className="text-2xl font-black tracking-tight">For You</h1>
-      <p className="mt-0.5 text-sm text-muted-foreground">
+      <p className="mt-0.5 text-sm text-white/40">
         Picked from your highest-ranked titles
       </p>
     </div>

@@ -103,6 +103,10 @@ body::before {
 ::-webkit-scrollbar-thumb { background: oklch(0.22 0 0); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: oklch(0.32 0.05 255); }
 
+/* Hide scrollbar utility for horizontal scroll rows */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -112,5 +116,6 @@ body::before {
   }
   html {
     @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
   }
 }

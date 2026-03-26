@@ -3,7 +3,7 @@
 import { useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Star, Plus } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { getPosterUrl } from "@/lib/tmdb"
 import { getTitle, getReleaseYear, type TMDBMovie } from "@/types"
 
@@ -26,7 +26,9 @@ export default function MovieRow({ title, movies, mediaType = "movie" }: MovieRo
 
   return (
     <section className="group/row relative">
-      <h2 className="mb-3 px-4 text-base font-bold tracking-tight text-white/90 sm:px-8 md:px-12">{title}</h2>
+      <h2 className="mb-3 px-4 text-[15px] font-bold tracking-tight text-white/90 sm:px-8 md:px-12">
+        {title}
+      </h2>
 
       <div className="relative">
         {/* Left arrow */}
@@ -34,14 +36,13 @@ export default function MovieRow({ title, movies, mediaType = "movie" }: MovieRo
           onClick={() => scroll("left")}
           className="absolute left-0 top-0 z-10 hidden h-full w-10 items-center justify-center bg-gradient-to-r from-black/80 to-transparent opacity-0 transition-opacity group-hover/row:flex group-hover/row:opacity-100 sm:left-4 md:left-8"
         >
-          <ChevronLeft className="h-6 w-6 text-white" />
+          <ChevronLeft className="h-5 w-5 text-white/70" />
         </button>
 
         {/* Scroll container */}
         <div
           ref={scrollRef}
-          className="flex gap-2 overflow-x-auto px-4 pb-2 scrollbar-hide sm:gap-3 sm:px-8 md:px-12"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          className="flex gap-2.5 overflow-x-auto px-4 pb-2 scrollbar-hide sm:gap-3 sm:px-8 md:px-12"
         >
           {movies.filter(m => m.poster_path).map((movie) => (
             <MoviePosterCard key={movie.id} movie={movie} mediaType={mediaType} />
@@ -53,7 +54,7 @@ export default function MovieRow({ title, movies, mediaType = "movie" }: MovieRo
           onClick={() => scroll("right")}
           className="absolute right-0 top-0 z-10 hidden h-full w-10 items-center justify-center bg-gradient-to-l from-black/80 to-transparent opacity-0 transition-opacity group-hover/row:flex group-hover/row:opacity-100 sm:right-4 md:right-8"
         >
-          <ChevronRight className="h-6 w-6 text-white" />
+          <ChevronRight className="h-5 w-5 text-white/70" />
         </button>
       </div>
     </section>
@@ -72,7 +73,7 @@ function MoviePosterCard({ movie, mediaType }: { movie: TMDBMovie; mediaType: "m
     >
       {/* Poster */}
       <div
-        className="relative overflow-hidden rounded-md transition-shadow duration-300 group-hover/card:shadow-[0_0_18px_rgba(37,99,235,0.28)]"
+        className="relative overflow-hidden rounded-lg bg-zinc-900 transition-all duration-300 group-hover/card:shadow-[0_0_20px_rgba(37,99,235,0.2)] group-hover/card:ring-1 group-hover/card:ring-blue-500/20"
         style={{ width: "130px", height: "195px" }}
       >
         <Image
@@ -82,33 +83,14 @@ function MoviePosterCard({ movie, mediaType }: { movie: TMDBMovie; mediaType: "m
           sizes="130px"
           className="object-cover transition-transform duration-300 group-hover/card:scale-105"
         />
-
-        {/* Hover overlay */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity duration-200 group-hover/card:opacity-100">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black transition-transform hover:scale-110">
-            <Star className="h-4 w-4" />
-          </span>
-          <button
-            onClick={async (e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              await fetch("/api/watchlist", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tmdbId: movie.id, mediaType }),
-              })
-            }}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/60 text-white transition-transform hover:scale-110"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </div>
       </div>
 
       {/* Title below poster */}
       <div className="mt-1.5 px-0.5">
-        <p className="truncate text-xs font-medium text-white/80">{title}</p>
-        <p className="text-xs text-white/40">{year}</p>
+        <p className="truncate text-[11px] font-medium text-white/70 group-hover/card:text-white/90 transition-colors">
+          {title}
+        </p>
+        <p className="text-[10px] text-white/30">{year}</p>
       </div>
     </Link>
   )
