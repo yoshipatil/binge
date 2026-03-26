@@ -85,13 +85,9 @@ function MoviePosterCard({ movie, mediaType }: { movie: TMDBMovie; mediaType: "m
 
         {/* Hover overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity duration-200 group-hover/card:opacity-100">
-          <Link
-            href={`/movie/${movie.id}?type=${mediaType}`}
-            onClick={(e) => e.stopPropagation()}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black transition-transform hover:scale-110"
-          >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black transition-transform hover:scale-110">
             <Star className="h-4 w-4" />
-          </Link>
+          </span>
           <button
             onClick={async (e) => {
               e.preventDefault()
