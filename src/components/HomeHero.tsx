@@ -193,6 +193,7 @@ function SearchCard({
                     body: JSON.stringify({ tmdbId: movie.id, mediaType }),
                   })
                   if (res.ok) toast.success("Added to watchlist")
+                  else if (res.status === 401) { window.location.href = "/sign-in"; return }
                   else toast.error("Failed to add to watchlist")
                 } catch {
                   toast.error("Network error — try again")

@@ -44,9 +44,11 @@ export default function MovieRow({ title, movies, mediaType = "movie" }: MovieRo
           ref={scrollRef}
           className="flex gap-2.5 overflow-x-auto px-4 pb-2 scrollbar-hide sm:gap-3 sm:px-8 md:px-12"
         >
-          {movies.filter(m => m.poster_path).map((movie) => (
-            <MoviePosterCard key={movie.id} movie={movie} mediaType={mediaType} />
-          ))}
+          {movies.filter(m => m.poster_path).map((movie) => {
+            // Use per-item media_type when available (e.g. trending/all), fall back to row-level prop
+            const itemType = movie.media_type === "tv" ? "tv" : mediaType
+            return <MoviePosterCard key={`${movie.id}-${itemType}`} movie={movie} mediaType={itemType} />
+          })}
         </div>
 
         {/* Right arrow */}

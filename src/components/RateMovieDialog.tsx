@@ -86,6 +86,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
       })
 
       if (!res.ok) {
+        if (res.status === 401) { window.location.href = "/sign-in"; return }
         const err = await res.json().catch(() => ({}))
         throw new Error(err.error ?? `Server error ${res.status}`)
       }
@@ -117,6 +118,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
         body: JSON.stringify({ winnerId, loserId, mediaType }),
       })
       if (!res.ok) {
+        if (res.status === 401) { window.location.href = "/sign-in"; return }
         const err = await res.json().catch(() => ({}))
         console.error("Comparison failed:", err.error ?? res.status)
       }

@@ -11,12 +11,15 @@ export async function DELETE() {
 
   const userId = session.user.id
 
-  // Delete all user data in parallel; order doesn't matter since there are no FK constraints
-  await Promise.all([
-    prisma.rating.deleteMany({ where: { userId } }),
-    prisma.watchlist.deleteMany({ where: { userId } }),
-    prisma.comparison.deleteMany({ where: { userId } }),
-  ])
+  try {
+    // Delete all user data; no FK constraints so order doesn't matter
+    await prisma.rating.deleteMany({ where: { userId } })
+    await prisma.watchlist.deleteMany({ where: { userId } })
+    await prisma.comparison.deleteMany({ where: { userId } })
 
-  return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error("Account deletion error:", err)
+    return NextResponse.json({ error: "Failed to delete account" }, { status: 500 })
+  }
 }

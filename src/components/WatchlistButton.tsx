@@ -42,6 +42,7 @@ export default function WatchlistButton({
 
       if (!res.ok) {
         setInWatchlist(wasInWatchlist) // revert
+        if (res.status === 401) { window.location.href = "/sign-in"; return }
         toast.error("Failed to update watchlist")
       } else {
         toast.success(wasInWatchlist ? "Removed from watchlist" : "Added to watchlist")
