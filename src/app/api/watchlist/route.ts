@@ -38,10 +38,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing tmdbId or mediaType" }, { status: 400 })
     }
 
-    const item = await prisma.watchlist.upsert({
+    // Neon HTTP adapter doesn't support transactions, so avoid upsert (which uses one internally)
+    const existing = await prisma.watchlist.findUnique({
       where: { userId_tmdbId_mediaType: { userId, tmdbId: Number(tmdbId), mediaType } },
-      update: {},
-      create: { userId, tmdbId: Number(tmdbId), mediaType },
+    })
+    const item = existing ?? await prisma.watchlist.create({
+      data: { userId, tmdbId: Number(tmdbId), mediaType },
     })
 
     return NextResponse.json(item)

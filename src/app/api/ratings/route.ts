@@ -56,18 +56,25 @@ export async function POST(request: NextRequest) {
     const roundedScore = Math.round(clampedScore * 10) / 10
     const eloScore = seedEloFromScore(roundedScore)
 
-    const rating = await prisma.rating.upsert({
+    // Neon HTTP adapter doesn't support transactions, so avoid upsert
+    const existingRating = await prisma.rating.findUnique({
       where: { userId_tmdbId_mediaType: { userId, tmdbId: Number(tmdbId), mediaType } },
-      update: { seedScore: roundedScore, eloScore, review: review ?? null, updatedAt: new Date() },
-      create: {
-        userId,
-        tmdbId: Number(tmdbId),
-        mediaType,
-        seedScore: roundedScore,
-        eloScore,
-        review: review ?? null,
-      },
     })
+    const rating = existingRating
+      ? await prisma.rating.update({
+          where: { id: existingRating.id },
+          data: { seedScore: roundedScore, eloScore, review: review ?? null, updatedAt: new Date() },
+        })
+      : await prisma.rating.create({
+          data: {
+            userId,
+            tmdbId: Number(tmdbId),
+            mediaType,
+            seedScore: roundedScore,
+            eloScore,
+            review: review ?? null,
+          },
+        })
 
     const [existing, priorComparisons] = await Promise.all([
       prisma.rating.findMany({
