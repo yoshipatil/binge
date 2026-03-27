@@ -55,7 +55,7 @@ async function WatchlistGrid({ mediaType, userId }: { mediaType: string | undefi
               movie={movies[i]}
               mediaType={item.mediaType as MediaType}
               trigger={
-                <Button size="sm" className="h-7 w-full gap-1 text-xs">
+                <Button size="sm" className="h-7 w-full gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0">
                   <Star className="h-3 w-3" />
                   Rate it
                 </Button>
@@ -75,10 +75,10 @@ export default async function WatchlistPage({ searchParams }: WatchlistPageProps
   const { type } = await searchParams
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    <div className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">
       <div className="mb-6 flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Watchlist</h1>
+          <h1 className="text-2xl font-black tracking-tight">Watchlist</h1>
           <p className="text-sm text-muted-foreground">Movies and shows you want to see</p>
         </div>
         <Suspense fallback={null}>

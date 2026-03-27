@@ -30,7 +30,10 @@ export const metadata: Metadata = {
     title: "Binge",
   },
   icons: {
-    icon: "/icon-192.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
     apple: "/icon-192.png",
   },
 };

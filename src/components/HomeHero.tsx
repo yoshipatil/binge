@@ -182,7 +182,8 @@ function SearchCard({
             sizes="(max-width: 640px) 33vw, 12vw"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
-          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          {/* Desktop hover overlay */}
+          <div className="absolute inset-0 hidden sm:flex items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
             <button
               onClick={async (e) => {
                 e.preventDefault()
@@ -212,20 +213,40 @@ function SearchCard({
         <p className="text-xs text-white/40">{year}</p>
       </div>
 
-      <div className="mt-1">
+      <div className="mt-1 flex gap-1">
         <RateMovieDialog
           movie={movie}
           mediaType={mediaType}
           trigger={
             <Button
               size="sm"
-              className="h-6 w-full gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0"
+              className="h-6 flex-1 gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0"
             >
               <Star className="h-3 w-3" />
               Rate
             </Button>
           }
         />
+        {/* Mobile-only watchlist button — desktop uses hover overlay above */}
+        <button
+          onClick={async () => {
+            try {
+              const res = await fetch("/api/watchlist", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tmdbId: movie.id, mediaType }),
+              })
+              if (res.ok) toast.success("Added to watchlist")
+              else if (res.status === 401) { window.location.href = "/sign-in"; return }
+              else toast.error("Failed to add to watchlist")
+            } catch {
+              toast.error("Network error — try again")
+            }
+          }}
+          className="sm:hidden flex h-6 w-6 items-center justify-center rounded border border-white/10 text-white/50 hover:text-white hover:border-white/20 transition-colors flex-shrink-0"
+        >
+          <Plus className="h-3 w-3" />
+        </button>
       </div>
     </div>
   )
