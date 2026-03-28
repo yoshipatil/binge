@@ -12,10 +12,16 @@ export async function DELETE() {
   const userId = session.user.id
 
   try {
-    // Delete all user data; no FK constraints so order doesn't matter
+    // Delete all user data in dependency order
     await prisma.rating.deleteMany({ where: { userId } })
     await prisma.watchlist.deleteMany({ where: { userId } })
     await prisma.comparison.deleteMany({ where: { userId } })
+    // Remove all follow relationships the user is part of (as follower or following)
+    await prisma.follow.deleteMany({
+      where: { OR: [{ followerId: userId }, { followingId: userId }] },
+    })
+    // Delete the User record itself (GDPR right to erasure)
+    await prisma.user.deleteMany({ where: { id: userId } })
 
     return NextResponse.json({ ok: true })
   } catch (err) {

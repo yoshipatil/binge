@@ -56,7 +56,7 @@ export default function StreamingFilter() {
     <div ref={ref} className="relative inline-block">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+        className={`flex min-h-[44px] items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors touch-manipulation ${
           selected.length > 0
             ? "border-blue-500 bg-blue-600/20 text-blue-300"
             : "border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white"
@@ -86,7 +86,7 @@ export default function StreamingFilter() {
                 <button
                   key={service.id}
                   onClick={() => toggle(service.id)}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5"
+                  className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-3 text-sm transition-colors hover:bg-white/5"
                 >
                   <div className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded ${active ? "bg-blue-600" : "border border-white/20"}`}>
                     {active && <Check className="h-3 w-3 text-white" />}

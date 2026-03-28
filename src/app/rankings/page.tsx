@@ -30,14 +30,20 @@ async function RankingsList({ mediaType, page, userId }: { mediaType: string | u
 
   if (filtered.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-          <Film className="h-7 w-7 text-white/30" />
+      <div className="flex flex-col items-center justify-center gap-5 py-24 text-center">
+        <Film className="h-10 w-10 text-white/10" />
+        <div>
+          <p className="text-lg font-bold text-white">The list is empty.</p>
+          <p className="mt-1.5 text-sm text-white/35">
+            Start comparing. Your taste will take shape.
+          </p>
         </div>
-        <p className="text-lg font-semibold">Nothing rated yet</p>
-        <p className="text-sm text-muted-foreground">
-          Go to Search and rate something to see it here.
-        </p>
+        <Link
+          href="/search"
+          className="rounded-xl bg-blue-600 px-5 py-3 min-h-[44px] text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
+        >
+          Rate something
+        </Link>
       </div>
     )
   }
@@ -123,10 +129,8 @@ export default async function RankingsPage({ searchParams }: RankingsPageProps) 
     <div className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">
       <div className="mb-8 flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight">Your Rankings</h1>
-          <p className="mt-0.5 text-sm text-white/40">
-            Ranked by ELO — updated as you compare
-          </p>
+          <h1 className="text-2xl font-black tracking-tight">Ranked</h1>
+          <p className="mt-0.5 text-sm text-white/40">Your taste, in order.</p>
         </div>
         <Suspense fallback={null}>
           <MediaTypeTabs />

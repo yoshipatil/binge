@@ -1,9 +1,11 @@
 import { Suspense } from "react"
+import Link from "next/link"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { getMovieRecommendations, getTVRecommendations, getWatchProvidersForMany } from "@/lib/tmdb"
 import MovieCard from "@/components/MovieCard"
+import MovieCardSheet from "@/components/MovieCardSheet"
 import RateMovieDialog from "@/components/RateMovieDialog"
 import WatchlistButton from "@/components/WatchlistButton"
 import StreamingFilter from "@/components/StreamingFilter"
@@ -86,16 +88,17 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
 
   if (!hasEnoughRatings) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">
         <PageHeader />
-        <div className="flex flex-col items-center gap-3 py-20 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-            <Sparkles className="h-7 w-7 text-white/30" />
+        <div className="flex flex-col items-center gap-5 py-24 text-center">
+          <Sparkles className="h-10 w-10 text-white/10" />
+          <div>
+            <p className="text-lg font-bold text-white">Rate a few films first.</p>
+            <p className="mt-1.5 text-sm text-white/35">Binge needs something to work with.</p>
           </div>
-          <p className="text-lg font-semibold">Rate more to unlock recommendations</p>
-          <p className="text-sm text-white/40">
-            Rate at least a few titles and Binge will find what to watch next.
-          </p>
+          <Link href="/search" className="rounded-xl bg-blue-600 px-5 py-3 min-h-[44px] text-sm font-semibold text-white hover:bg-blue-500 transition-colors">
+            Start rating
+          </Link>
         </div>
       </div>
     )
@@ -111,14 +114,15 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
       </div>
 
       {!hasAnything && (
-        <div className="flex flex-col items-center gap-3 py-20 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-            <Tv className="h-7 w-7 text-white/30" />
+        <div className="flex flex-col items-center gap-5 py-24 text-center">
+          <Tv className="h-10 w-10 text-white/10" />
+          <div>
+            <p className="text-lg font-bold text-white">Nothing on this service yet.</p>
+            <p className="mt-1.5 text-sm text-white/35">Try a different filter or rate more titles.</p>
           </div>
-          <p className="text-lg font-semibold">Nothing here for this service</p>
-          <p className="text-sm text-white/40">
-            Try a different streaming filter or clear it.
-          </p>
+          <Link href="/search" className="flex min-h-[44px] items-center justify-center rounded-xl border border-white/10 px-5 py-3 text-sm text-white/60 hover:text-white hover:border-white/20 transition-colors">
+            Rate more titles
+          </Link>
         </div>
       )}
 
@@ -129,26 +133,27 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
             {movieRecommendations.map((movie) => {
               const mediaType = getMediaType(movie)
               return (
-                <MovieCard
-                  key={movie.id}
-                  movie={movie}
-                  mediaType={mediaType}
-                  actions={
-                    <div className="flex gap-1">
-                      <RateMovieDialog
-                        movie={movie}
-                        mediaType={mediaType}
-                        trigger={
-                          <Button size="sm" className="h-7 flex-1 gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0">
-                            <Star className="h-3 w-3" />
-                            Rate
-                          </Button>
-                        }
-                      />
-                      <WatchlistButton tmdbId={movie.id} mediaType={mediaType} initialInWatchlist={watchlistIds.has(movie.id)} />
-                    </div>
-                  }
-                />
+                <MovieCardSheet key={movie.id} movie={movie} mediaType={mediaType} initialInWatchlist={watchlistIds.has(movie.id)}>
+                  <MovieCard
+                    movie={movie}
+                    mediaType={mediaType}
+                    actions={
+                      <div className="flex gap-1">
+                        <RateMovieDialog
+                          movie={movie}
+                          mediaType={mediaType}
+                          trigger={
+                            <Button size="sm" className="h-9 flex-1 gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0">
+                              <Star className="h-3 w-3" />
+                              Rate
+                            </Button>
+                          }
+                        />
+                        <WatchlistButton tmdbId={movie.id} mediaType={mediaType} initialInWatchlist={watchlistIds.has(movie.id)} />
+                      </div>
+                    }
+                  />
+                </MovieCardSheet>
               )
             })}
           </div>
@@ -162,26 +167,27 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
             {tvRecommendations.map((movie) => {
               const mediaType = getMediaType({ ...movie, media_type: "tv" })
               return (
-                <MovieCard
-                  key={movie.id}
-                  movie={movie}
-                  mediaType={mediaType}
-                  actions={
-                    <div className="flex gap-1">
-                      <RateMovieDialog
-                        movie={movie}
-                        mediaType={mediaType}
-                        trigger={
-                          <Button size="sm" className="h-7 flex-1 gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0">
-                            <Star className="h-3 w-3" />
-                            Rate
-                          </Button>
-                        }
-                      />
-                      <WatchlistButton tmdbId={movie.id} mediaType={mediaType} initialInWatchlist={watchlistIds.has(movie.id)} />
-                    </div>
-                  }
-                />
+                <MovieCardSheet key={movie.id} movie={movie} mediaType={mediaType} initialInWatchlist={watchlistIds.has(movie.id)}>
+                  <MovieCard
+                    movie={movie}
+                    mediaType={mediaType}
+                    actions={
+                      <div className="flex gap-1">
+                        <RateMovieDialog
+                          movie={movie}
+                          mediaType={mediaType}
+                          trigger={
+                            <Button size="sm" className="h-9 flex-1 gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0">
+                              <Star className="h-3 w-3" />
+                              Rate
+                            </Button>
+                          }
+                        />
+                        <WatchlistButton tmdbId={movie.id} mediaType={mediaType} initialInWatchlist={watchlistIds.has(movie.id)} />
+                      </div>
+                    }
+                  />
+                </MovieCardSheet>
               )
             })}
           </div>
@@ -195,9 +201,7 @@ function PageHeader() {
   return (
     <div>
       <h1 className="text-2xl font-black tracking-tight">For You</h1>
-      <p className="mt-0.5 text-sm text-white/40">
-        Picked from your highest-ranked titles
-      </p>
+      <p className="mt-0.5 text-sm text-white/40">Based on what you love.</p>
     </div>
   )
 }

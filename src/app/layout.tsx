@@ -17,7 +17,6 @@ export const viewport: Viewport = {
   themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
 export const metadata: Metadata = {
@@ -54,11 +53,11 @@ export default async function RootLayout({
           <main className="flex-1 pb-20 md:pb-0">
             {children}
           </main>
-          {/* Footer — hidden on mobile (bottom nav is there), shown on desktop */}
-          <footer className="hidden border-t border-white/5 py-4 text-center text-xs text-white/25 md:block">
+          {/* Footer — TMDB attribution required by ToS, visible on all screen sizes */}
+          <footer className="border-t border-white/5 pb-24 pt-3 text-center text-[11px] text-white/20 md:pb-4 md:pt-4 md:text-xs md:text-white/25">
             This product uses the TMDB API but is not endorsed or certified by TMDB.
             {" · "}
-            <a href="/privacy" className="underline-offset-2 hover:text-white/50 hover:underline">
+            <a href="/privacy" className="underline-offset-2 hover:text-white/40 hover:underline">
               Privacy Policy
             </a>
           </footer>

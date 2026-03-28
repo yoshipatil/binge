@@ -12,7 +12,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { LogOut, Trash2, ShieldCheck } from "lucide-react"
+import { LogOut, Trash2, ShieldCheck, User } from "lucide-react"
 import toast from "react-hot-toast"
 
 interface AccountMenuProps {
@@ -77,6 +77,15 @@ export default function AccountMenu({ trigger }: AccountMenuProps) {
         </SheetHeader>
 
         <div className="mt-4 flex flex-col gap-1">
+          <Link
+            href="/profile/me"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+          >
+            <User className="h-4 w-4" />
+            My Profile
+          </Link>
+
           <Link
             href="/privacy"
             onClick={() => setOpen(false)}

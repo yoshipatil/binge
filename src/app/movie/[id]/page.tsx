@@ -65,6 +65,81 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
     displayScore = found?.displayScore
   }
 
+  // Compute Binge score (avg display score across all users who rated this title)
+  // and Friends score (avg across users that current user follows).
+  // Strategy: fetch all ratings for this title, group by user, normalize each
+  // user's full rating list, extract display score for this title, then average.
+  let bingeScore: number | undefined
+  let friendsScore: number | undefined
+  try {
+    // All ratings for this title across all users
+    const allTitleRatings = await prisma.rating.findMany({
+      where: { tmdbId: Number(id), mediaType },
+      select: { userId: true, eloScore: true },
+    })
+
+    // Which users the current user follows (for friends score)
+    const followedIds = userId
+      ? (
+          await prisma.follow.findMany({
+            where: { followerId: userId },
+            select: { followingId: true },
+          })
+        ).map((f) => f.followingId)
+      : []
+    const followedSet = new Set(followedIds)
+
+    const raterIds = [...new Set(allTitleRatings.map((r) => r.userId))]
+
+    if (raterIds.length > 0) {
+      // Fetch all ratings (same mediaType) for every user who rated this title —
+      // needed to normalize each user's ELO scores to their personal 0–10 scale
+      const allRaterRatings = await prisma.rating.findMany({
+        where: { userId: { in: raterIds }, mediaType },
+        select: { userId: true, tmdbId: true, eloScore: true },
+      })
+
+      // Group by userId
+      const byUser = new Map<string, { tmdbId: number; eloScore: number }[]>()
+      for (const r of allRaterRatings) {
+        const arr = byUser.get(r.userId) ?? []
+        arr.push({ tmdbId: r.tmdbId, eloScore: r.eloScore })
+        byUser.set(r.userId, arr)
+      }
+
+      // Normalize per user and extract display score for this title
+      const displayScores: number[] = []
+      const friendDisplayScores: number[] = []
+      const tmdbIdNum = Number(id)
+
+      for (const [uid, ratings] of byUser) {
+        const normalized = normalizeEloScores(ratings)
+        const entry = normalized.find((r) => r.tmdbId === tmdbIdNum)
+        if (!entry) continue
+        displayScores.push(entry.displayScore)
+        if (followedSet.has(uid)) friendDisplayScores.push(entry.displayScore)
+      }
+
+      // Binge score: require at least 3 raters to avoid misleading single-rating scores
+      if (displayScores.length >= 3) {
+        bingeScore =
+          Math.round(
+            (displayScores.reduce((a, b) => a + b, 0) / displayScores.length) * 10
+          ) / 10
+      }
+
+      // Friends score: require at least 1 friend rating
+      if (friendDisplayScores.length >= 1) {
+        friendsScore =
+          Math.round(
+            (friendDisplayScores.reduce((a, b) => a + b, 0) / friendDisplayScores.length) * 10
+          ) / 10
+      }
+    }
+  } catch {
+    // Scores are non-critical — fail silently
+  }
+
   const isInWatchlist = userId
     ? !!(await prisma.watchlist.findFirst({ where: { userId, tmdbId: Number(id) } }))
     : false
@@ -96,7 +171,7 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
         </div>
       )}
 
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:-mt-24 relative z-10">
+      <div className="mx-auto max-w-5xl px-4 py-6 pb-24 md:pb-8 sm:-mt-24 relative z-10">
         <div className="flex gap-6">
           {/* Poster */}
           <div className="relative hidden flex-shrink-0 sm:block">
@@ -148,6 +223,24 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
                 )}
               </div>
             </div>
+
+            {/* Community scores */}
+            {(bingeScore !== undefined || friendsScore !== undefined) && (
+              <div className="flex flex-wrap gap-2">
+                {friendsScore !== undefined && (
+                  <div className="flex items-center gap-1.5 rounded-lg border border-blue-500/20 bg-blue-500/8 px-3 py-1.5">
+                    <span className="text-sm font-black text-blue-400">{friendsScore.toFixed(1)}</span>
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-blue-400/60">Friends</span>
+                  </div>
+                )}
+                {bingeScore !== undefined && (
+                  <div className="flex items-center gap-1.5 rounded-lg border border-white/8 bg-white/4 px-3 py-1.5">
+                    <span className="text-sm font-black text-white/80">{bingeScore.toFixed(1)}</span>
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-white/30">Binge</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Genres */}
             {movie.genres && movie.genres.length > 0 && (

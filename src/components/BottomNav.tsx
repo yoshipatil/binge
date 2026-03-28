@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Home, Star, Bookmark, Sparkles, LogIn } from "lucide-react"
+import { Home, Star, Bookmark, Sparkles, Users, LogIn } from "lucide-react"
 import AccountMenu from "@/components/AccountMenu"
 
 const links = [
@@ -12,6 +12,7 @@ const links = [
   { href: "/rankings", label: "Rankings", icon: Star },
   { href: "/watchlist", label: "Watchlist", icon: Bookmark },
   { href: "/recommendations", label: "For You", icon: Sparkles },
+  { href: "/people", label: "Circle", icon: Users },
 ]
 
 export default function BottomNav() {
@@ -48,7 +49,7 @@ export default function BottomNav() {
         {session?.user ? (
           <AccountMenu
             trigger={
-              <button className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px]">
+              <div className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px] cursor-pointer">
                 <div className="flex h-[34px] w-[34px] items-center justify-center">
                   {session.user.image ? (
                     <Image
@@ -63,7 +64,7 @@ export default function BottomNav() {
                   )}
                 </div>
                 <span className="text-[10px] font-medium tracking-wide text-white/30">Me</span>
-              </button>
+              </div>
             }
           />
         ) : (

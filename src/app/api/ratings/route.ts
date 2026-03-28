@@ -6,6 +6,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { seedEloFromScore, normalizeEloScores, pickComparisonCandidates } from "@/lib/elo"
 import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
+import { syncUser } from "@/lib/syncUser"
 
 const VALID_MEDIA_TYPES = ["movie", "tv", "documentary"] as const
 type ValidMediaType = (typeof VALID_MEDIA_TYPES)[number]
@@ -16,6 +17,10 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const userId = session.user.id
+
+  // Lazy sync — fire-and-forget so existing users get a User record
+  // without having to sign out and back in. Doesn't block the response.
+  syncUser(session.user as Parameters<typeof syncUser>[0])
 
   try {
     const ratings = await prisma.rating.findMany({

@@ -33,9 +33,9 @@ export default function MediaTypeTabs({ defaultValue = "all" }: MediaTypeTabsPro
 
   return (
     <Tabs value={current} onValueChange={handleChange}>
-      <TabsList className="h-9">
+      <TabsList className="h-11">
         {tabs.map((tab) => (
-          <TabsTrigger key={tab.value} value={tab.value} className="text-sm">
+          <TabsTrigger key={tab.value} value={tab.value} className="px-3 text-sm min-h-[44px]">
             {tab.label}
           </TabsTrigger>
         ))}

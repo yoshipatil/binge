@@ -48,3 +48,31 @@ model Comparison {
 
   @@index([userId, mediaType])
 }
+
+// Cached user profiles — synced from Google on every sign-in.
+// Needed because Auth.js JWT strategy has no built-in user table.
+// Enables user search, profile pages, and follow relationships.
+model User {
+  id        String   @id   // Google sub ID (stable across sessions)
+  name      String?
+  email     String?
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}
+
+// Follow relationships — follower follows following.
+// Used to compute friends' aggregate scores on movie pages
+// and to build the activity feed (future).
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   // the user doing the following
+  followingId String   // the user being followed
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
