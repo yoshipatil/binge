@@ -5,6 +5,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 
+const VALID_MEDIA_TYPES = ["movie", "tv", "documentary"] as const
+type ValidMediaType = (typeof VALID_MEDIA_TYPES)[number]
+
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id) {
@@ -32,18 +35,25 @@ export async function POST(request: NextRequest) {
   const userId = session.user.id
 
   try {
-    const { tmdbId, mediaType } = await request.json()
+    const body = await request.json()
 
-    if (!tmdbId || !mediaType) {
-      return NextResponse.json({ error: "Missing tmdbId or mediaType" }, { status: 400 })
+    // --- Input validation ---
+    const tmdbId = Number(body.tmdbId)
+    if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
+      return NextResponse.json({ error: "Invalid tmdbId" }, { status: 400 })
     }
+    if (!VALID_MEDIA_TYPES.includes(body.mediaType)) {
+      return NextResponse.json({ error: "Invalid mediaType" }, { status: 400 })
+    }
+    const mediaType = body.mediaType as ValidMediaType
+    // --- End validation ---
 
     // Neon HTTP adapter doesn't support transactions, so avoid upsert (which uses one internally)
     const existing = await prisma.watchlist.findUnique({
-      where: { userId_tmdbId_mediaType: { userId, tmdbId: Number(tmdbId), mediaType } },
+      where: { userId_tmdbId_mediaType: { userId, tmdbId, mediaType } },
     })
     const item = existing ?? await prisma.watchlist.create({
-      data: { userId, tmdbId: Number(tmdbId), mediaType },
+      data: { userId, tmdbId, mediaType },
     })
 
     return NextResponse.json(item)
@@ -61,15 +71,18 @@ export async function DELETE(request: NextRequest) {
   const userId = session.user.id
 
   try {
-    const tmdbId = request.nextUrl.searchParams.get("tmdbId")
+    const tmdbId = Number(request.nextUrl.searchParams.get("tmdbId"))
     const mediaType = request.nextUrl.searchParams.get("mediaType")
 
-    if (!tmdbId || !mediaType) {
-      return NextResponse.json({ error: "Missing tmdbId or mediaType" }, { status: 400 })
+    if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
+      return NextResponse.json({ error: "Invalid tmdbId" }, { status: 400 })
+    }
+    if (!mediaType || !VALID_MEDIA_TYPES.includes(mediaType as ValidMediaType)) {
+      return NextResponse.json({ error: "Invalid mediaType" }, { status: 400 })
     }
 
     await prisma.watchlist.delete({
-      where: { userId_tmdbId_mediaType: { userId, tmdbId: Number(tmdbId), mediaType } },
+      where: { userId_tmdbId_mediaType: { userId, tmdbId, mediaType } },
     })
 
     return NextResponse.json({ success: true })

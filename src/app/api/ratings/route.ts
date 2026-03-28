@@ -7,6 +7,9 @@ import { prisma } from "@/lib/prisma"
 import { seedEloFromScore, normalizeEloScores, pickComparisonCandidates } from "@/lib/elo"
 import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
 
+const VALID_MEDIA_TYPES = ["movie", "tv", "documentary"] as const
+type ValidMediaType = (typeof VALID_MEDIA_TYPES)[number]
+
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id) {
@@ -46,11 +49,34 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { tmdbId, mediaType, seedScore, review } = body
 
-    if (!tmdbId || !mediaType || seedScore === undefined) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    // --- Input validation ---
+    const tmdbId = Number(body.tmdbId)
+    if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
+      return NextResponse.json({ error: "Invalid tmdbId" }, { status: 400 })
     }
+
+    if (!VALID_MEDIA_TYPES.includes(body.mediaType)) {
+      return NextResponse.json({ error: "Invalid mediaType" }, { status: 400 })
+    }
+    const mediaType = body.mediaType as ValidMediaType
+
+    const seedScore = Number(body.seedScore)
+    if (!Number.isFinite(seedScore) || seedScore < 1 || seedScore > 10) {
+      return NextResponse.json({ error: "seedScore must be between 1 and 10" }, { status: 400 })
+    }
+
+    let review: string | null = null
+    if (body.review !== undefined && body.review !== null) {
+      if (typeof body.review !== "string") {
+        return NextResponse.json({ error: "review must be a string" }, { status: 400 })
+      }
+      if (body.review.length > 500) {
+        return NextResponse.json({ error: "review must be 500 characters or less" }, { status: 400 })
+      }
+      review = body.review
+    }
+    // --- End validation ---
 
     const clampedScore = Math.max(1, Math.min(10, seedScore))
     const roundedScore = Math.round(clampedScore * 10) / 10
@@ -58,41 +84,34 @@ export async function POST(request: NextRequest) {
 
     // Neon HTTP adapter doesn't support transactions, so avoid upsert
     const existingRating = await prisma.rating.findUnique({
-      where: { userId_tmdbId_mediaType: { userId, tmdbId: Number(tmdbId), mediaType } },
+      where: { userId_tmdbId_mediaType: { userId, tmdbId, mediaType } },
     })
     const rating = existingRating
       ? await prisma.rating.update({
           where: { id: existingRating.id },
-          data: { seedScore: roundedScore, eloScore, review: review ?? null, updatedAt: new Date() },
+          data: { seedScore: roundedScore, eloScore, review, updatedAt: new Date() },
         })
       : await prisma.rating.create({
-          data: {
-            userId,
-            tmdbId: Number(tmdbId),
-            mediaType,
-            seedScore: roundedScore,
-            eloScore,
-            review: review ?? null,
-          },
+          data: { userId, tmdbId, mediaType, seedScore: roundedScore, eloScore, review },
         })
 
     const [existing, priorComparisons] = await Promise.all([
       prisma.rating.findMany({
-        where: { userId, mediaType, NOT: { tmdbId: Number(tmdbId) } },
+        where: { userId, mediaType, NOT: { tmdbId } },
         select: { tmdbId: true, eloScore: true },
       }),
       prisma.comparison.findMany({
         where: {
           userId,
           mediaType,
-          OR: [{ winnerTmdbId: Number(tmdbId) }, { loserTmdbId: Number(tmdbId) }],
+          OR: [{ winnerTmdbId: tmdbId }, { loserTmdbId: tmdbId }],
         },
         select: { winnerTmdbId: true, loserTmdbId: true },
       }),
     ])
 
     const alreadyComparedIds = priorComparisons.map((c) =>
-      c.winnerTmdbId === Number(tmdbId) ? c.loserTmdbId : c.winnerTmdbId
+      c.winnerTmdbId === tmdbId ? c.loserTmdbId : c.winnerTmdbId
     )
 
     const candidateIds = pickComparisonCandidates(eloScore, existing, 4, alreadyComparedIds)
@@ -118,15 +137,18 @@ export async function DELETE(request: NextRequest) {
   const userId = session.user.id
 
   try {
-    const tmdbId = request.nextUrl.searchParams.get("tmdbId")
+    const tmdbId = Number(request.nextUrl.searchParams.get("tmdbId"))
     const mediaType = request.nextUrl.searchParams.get("mediaType")
 
-    if (!tmdbId || !mediaType) {
-      return NextResponse.json({ error: "Missing tmdbId or mediaType" }, { status: 400 })
+    if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
+      return NextResponse.json({ error: "Invalid tmdbId" }, { status: 400 })
+    }
+    if (!mediaType || !VALID_MEDIA_TYPES.includes(mediaType as ValidMediaType)) {
+      return NextResponse.json({ error: "Invalid mediaType" }, { status: 400 })
     }
 
     await prisma.rating.delete({
-      where: { userId_tmdbId_mediaType: { userId, tmdbId: Number(tmdbId), mediaType } },
+      where: { userId_tmdbId_mediaType: { userId, tmdbId, mediaType } },
     })
 
     return NextResponse.json({ success: true })

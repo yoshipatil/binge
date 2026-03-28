@@ -1,11 +1,14 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Bookmark, Star } from "lucide-react"
 import { getPosterUrl } from "@/lib/tmdb"
 import { getTitle, getReleaseYear, type TMDBMovie } from "@/types"
+import RateMovieDialog from "@/components/RateMovieDialog"
+import { Button } from "@/components/ui/button"
+import toast from "react-hot-toast"
 
 interface MovieRowProps {
   title: string
@@ -45,7 +48,6 @@ export default function MovieRow({ title, movies, mediaType = "movie" }: MovieRo
           className="flex gap-2.5 overflow-x-auto px-4 pb-2 scrollbar-hide sm:gap-3 sm:px-8 md:px-12"
         >
           {movies.filter(m => m.poster_path).map((movie) => {
-            // Use per-item media_type when available (e.g. trending/all), fall back to row-level prop
             const itemType = movie.media_type === "tv" ? "tv" : mediaType
             return <MoviePosterCard key={`${movie.id}-${itemType}`} movie={movie} mediaType={itemType} />
           })}
@@ -66,34 +68,104 @@ export default function MovieRow({ title, movies, mediaType = "movie" }: MovieRo
 function MoviePosterCard({ movie, mediaType }: { movie: TMDBMovie; mediaType: "movie" | "tv" }) {
   const title = getTitle(movie)
   const year = getReleaseYear(movie)
+  const [showActions, setShowActions] = useState(false)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchMovedRef = useRef(false)
+
+  function onTouchStart() {
+    touchMovedRef.current = false
+    longPressTimer.current = setTimeout(() => {
+      if (!touchMovedRef.current) setShowActions(true)
+    }, 500)
+  }
+
+  function onTouchMove() {
+    touchMovedRef.current = true
+    if (longPressTimer.current) clearTimeout(longPressTimer.current)
+  }
+
+  function onTouchEnd() {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current)
+  }
 
   return (
-    <Link
-      href={`/movie/${movie.id}?type=${mediaType}`}
+    <div
       className="group/card relative flex-shrink-0 cursor-pointer"
       style={{ width: "130px" }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
     >
-      {/* Poster */}
-      <div
-        className="relative overflow-hidden rounded-lg bg-zinc-900 transition-all duration-300 group-hover/card:shadow-[0_0_20px_rgba(37,99,235,0.2)] group-hover/card:ring-1 group-hover/card:ring-blue-500/20"
-        style={{ width: "130px", height: "195px" }}
+      <Link
+        href={`/movie/${movie.id}?type=${mediaType}`}
+        onClick={(e) => { if (showActions) e.preventDefault() }}
       >
-        <Image
-          src={getPosterUrl(movie.poster_path, "w342")}
-          alt={title}
-          fill
-          sizes="130px"
-          className="object-cover transition-transform duration-300 group-hover/card:scale-105"
-        />
-      </div>
+        {/* Poster */}
+        <div
+          className="relative overflow-hidden rounded-lg bg-zinc-900 transition-all duration-300 group-hover/card:shadow-[0_0_20px_rgba(37,99,235,0.2)] group-hover/card:ring-1 group-hover/card:ring-blue-500/20"
+          style={{ width: "130px", height: "195px" }}
+        >
+          <Image
+            src={getPosterUrl(movie.poster_path, "w342")}
+            alt={title}
+            fill
+            sizes="130px"
+            className="object-cover transition-transform duration-300 group-hover/card:scale-105"
+          />
+        </div>
 
-      {/* Title below poster */}
-      <div className="mt-1.5 px-0.5">
-        <p className="truncate text-[11px] font-medium text-white/70 group-hover/card:text-white/90 transition-colors">
-          {title}
-        </p>
-        <p className="text-[10px] text-white/30">{year}</p>
-      </div>
-    </Link>
+        {/* Title below poster */}
+        <div className="mt-1.5 px-0.5">
+          <p className="truncate text-[11px] font-medium text-white/70 group-hover/card:text-white/90 transition-colors">
+            {title}
+          </p>
+          <p className="text-[10px] text-white/30">{year}</p>
+        </div>
+      </Link>
+
+      {/* Long-press quick actions overlay (mobile) */}
+      {showActions && (
+        <div
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-lg bg-black/88 p-3"
+          onClick={(e) => { e.stopPropagation(); setShowActions(false) }}
+        >
+          <p className="mb-0.5 line-clamp-2 text-center text-[11px] font-semibold text-white">{title}</p>
+          <RateMovieDialog
+            movie={movie}
+            mediaType={mediaType}
+            trigger={
+              <Button
+                size="sm"
+                className="h-8 w-full gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Star className="h-3 w-3" />
+                Rate
+              </Button>
+            }
+          />
+          <button
+            className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-white/10 text-xs text-white/70 hover:border-white/20 hover:text-white transition-colors"
+            onClick={async (e) => {
+              e.stopPropagation()
+              try {
+                const res = await fetch("/api/watchlist", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ tmdbId: movie.id, mediaType }),
+                })
+                if (res.ok) toast.success("Added to watchlist")
+                else if (res.status === 401) { window.location.href = "/sign-in"; return }
+                else toast.error("Failed to add")
+              } catch { toast.error("Network error") }
+              setShowActions(false)
+            }}
+          >
+            <Bookmark className="h-3 w-3" />
+            Watchlist
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

@@ -5,6 +5,9 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { calculateElo } from "@/lib/elo"
 
+const VALID_MEDIA_TYPES = ["movie", "tv", "documentary"] as const
+type ValidMediaType = (typeof VALID_MEDIA_TYPES)[number]
+
 const recentComparisons = new Map<string, number>()
 
 export async function POST(request: NextRequest) {
@@ -15,11 +18,26 @@ export async function POST(request: NextRequest) {
   const userId = session.user.id
 
   try {
-    const { winnerId, loserId, mediaType } = await request.json()
+    const body = await request.json()
 
-    if (!winnerId || !loserId || !mediaType) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    // --- Input validation ---
+    const winnerId = Number(body.winnerId)
+    const loserId = Number(body.loserId)
+
+    if (!Number.isInteger(winnerId) || winnerId <= 0) {
+      return NextResponse.json({ error: "Invalid winnerId" }, { status: 400 })
     }
+    if (!Number.isInteger(loserId) || loserId <= 0) {
+      return NextResponse.json({ error: "Invalid loserId" }, { status: 400 })
+    }
+    if (winnerId === loserId) {
+      return NextResponse.json({ error: "Winner and loser must be different" }, { status: 400 })
+    }
+    if (!VALID_MEDIA_TYPES.includes(body.mediaType)) {
+      return NextResponse.json({ error: "Invalid mediaType" }, { status: 400 })
+    }
+    const mediaType = body.mediaType as ValidMediaType
+    // --- End validation ---
 
     const pairKey = [userId, Math.min(winnerId, loserId), Math.max(winnerId, loserId), mediaType].join(":")
     const lastSeen = recentComparisons.get(pairKey) ?? 0

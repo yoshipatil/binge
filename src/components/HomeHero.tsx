@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Search, X, Star, Plus } from "lucide-react"
+import { Search, X, Star, Plus, ChevronRight } from "lucide-react"
 import toast from "react-hot-toast"
 import { getPosterUrl, getBackdropUrl } from "@/lib/tmdb"
 import { getTitle, getReleaseYear, getMediaType, type TMDBMovie } from "@/types"
@@ -82,17 +82,21 @@ export default function HomeHero({ featured }: HomeHeroProps) {
         {/* Hero text + search */}
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-8 sm:px-8 md:px-12">
           {featured && !isSearching && (
-            <div className="mb-5">
+            <Link
+              href={`/movie/${featured.id}?type=${featured.media_type === "tv" ? "tv" : "movie"}`}
+              className="mb-5 block group/hero"
+            >
               <span className="mb-2 inline-flex items-center rounded-[3px] bg-blue-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
                 Trending Now
               </span>
-              <h1 className="text-2xl font-black text-white drop-shadow-lg sm:text-3xl md:text-4xl">
+              <h1 className="text-2xl font-black text-white drop-shadow-lg sm:text-3xl md:text-4xl group-hover/hero:text-blue-100 transition-colors">
                 {getTitle(featured)}
+                <ChevronRight className="inline-block h-6 w-6 ml-1 opacity-0 group-hover/hero:opacity-60 transition-opacity" />
               </h1>
               <p className="mt-1.5 line-clamp-2 max-w-lg text-sm text-white/50 drop-shadow">
                 {featured.overview}
               </p>
-            </div>
+            </Link>
           )}
 
           {/* Search bar */}

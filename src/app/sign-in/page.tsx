@@ -45,7 +45,7 @@ function SignInForm() {
         </div>
 
         <p className="text-center text-xs text-white/15">
-          Your rankings are private and belong only to you.
+          Your taste, ranked your way.
         </p>
       </div>
     </div>

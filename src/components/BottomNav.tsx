@@ -49,17 +49,17 @@ export default function BottomNav() {
           <AccountMenu
             trigger={
               <button className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px]">
-                <div className="flex items-center justify-center rounded-xl p-1.5">
+                <div className="flex h-[34px] w-[34px] items-center justify-center">
                   {session.user.image ? (
                     <Image
                       src={session.user.image}
                       alt={session.user.name ?? ""}
-                      width={22}
-                      height={22}
+                      width={28}
+                      height={28}
                       className="rounded-full ring-1 ring-white/20"
                     />
                   ) : (
-                    <div className="h-[22px] w-[22px] rounded-full bg-blue-500/30" />
+                    <div className="h-7 w-7 rounded-full bg-blue-500/30" />
                   )}
                 </div>
                 <span className="text-[10px] font-medium tracking-wide text-white/30">Me</span>

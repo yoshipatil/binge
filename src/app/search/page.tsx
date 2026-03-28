@@ -40,9 +40,9 @@ export default function SearchPage() {
   }, [])
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    <div className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">
       <div className="mb-6 flex flex-col gap-2">
-        <h1 className="text-2xl font-bold">Search</h1>
+        <h1 className="text-2xl font-black tracking-tight">Search</h1>
         <p className="text-sm text-muted-foreground">
           Find movies, TV shows, and documentaries to rate
         </p>
@@ -100,7 +100,7 @@ export default function SearchPage() {
                       movie={movie}
                       mediaType={mediaType}
                       trigger={
-                        <Button size="sm" className="h-7 flex-1 gap-1 text-xs">
+                        <Button size="sm" className="h-7 flex-1 gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0">
                           <Star className="h-3 w-3" />
                           Rate
                         </Button>

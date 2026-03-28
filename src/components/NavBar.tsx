@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Star, Bookmark, Sparkles, Home, LogIn } from "lucide-react"
+import { Star, Bookmark, Sparkles, Home, LogIn, Search } from "lucide-react"
 import BingeLogo from "@/components/BingeLogo"
 import AccountMenu from "@/components/AccountMenu"
 
@@ -50,6 +50,15 @@ export default function NavBar() {
             )
           })}
         </div>
+
+        {/* Mobile search icon — always visible on small screens */}
+        <Link
+          href="/search"
+          className="flex md:hidden items-center justify-center rounded-lg p-2 text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+          aria-label="Search"
+        >
+          <Search className="h-5 w-5" />
+        </Link>
 
         {/* Desktop auth */}
         <div className="hidden md:flex items-center gap-2">
