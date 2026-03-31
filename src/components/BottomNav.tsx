@@ -37,9 +37,9 @@ export default function BottomNav() {
               className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px]"
             >
               <div className={`flex items-center justify-center rounded-xl p-1.5 transition-all duration-200 ${active ? "bg-blue-500/15" : ""}`}>
-                <Icon className={`h-[22px] w-[22px] transition-colors duration-200 ${active ? "text-blue-400" : "text-white/35"}`} />
+                <Icon className={`h-[22px] w-[22px] transition-colors duration-200 ${active ? "text-blue-400" : "text-white/45"}`} />
               </div>
-              <span className={`text-[10px] font-medium tracking-wide transition-colors duration-200 ${active ? "text-blue-400" : "text-white/30"}`}>
+              <span className={`text-[10px] font-medium tracking-wide transition-colors duration-200 ${active ? "text-blue-400" : "text-white/40"}`}>
                 {label}
               </span>
             </Link>
@@ -52,20 +52,27 @@ export default function BottomNav() {
             href="/profile/me"
             className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px]"
           >
-            <div className="flex h-[34px] w-[34px] items-center justify-center">
-              {session.user.image ? (
-                <Image
-                  src={session.user.image}
-                  alt={session.user.name ?? ""}
-                  width={30}
-                  height={30}
-                  className="rounded-full ring-1 ring-white/20"
-                />
-              ) : (
-                <div className="h-[30px] w-[30px] rounded-full bg-blue-500/30" />
-              )}
-            </div>
-            <span className="text-[10px] font-medium tracking-wide text-white/30">Me</span>
+            {(() => {
+              const profileActive = pathname === "/profile/me" || pathname.startsWith("/profile/")
+              return (
+                <>
+                  <div className={`flex items-center justify-center rounded-xl p-1 transition-all duration-200 ${profileActive ? "bg-blue-500/15" : ""}`}>
+                    {session.user.image ? (
+                      <Image
+                        src={session.user.image}
+                        alt={session.user.name ?? ""}
+                        width={26}
+                        height={26}
+                        className={`rounded-full transition-all duration-200 ${profileActive ? "ring-2 ring-blue-400/70" : "ring-1 ring-white/20"}`}
+                      />
+                    ) : (
+                      <div className={`h-[26px] w-[26px] rounded-full bg-blue-500/30 transition-all duration-200 ${profileActive ? "ring-2 ring-blue-400/70" : ""}`} />
+                    )}
+                  </div>
+                  <span className={`text-[10px] font-medium tracking-wide transition-colors duration-200 ${profileActive ? "text-blue-400" : "text-white/30"}`}>Me</span>
+                </>
+              )
+            })()}
           </Link>
         ) : (
           <Link

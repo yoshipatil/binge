@@ -206,17 +206,17 @@ export default async function FriendsPage() {
       {activity.length > 0 && (
         <section className="mb-10">
           <div className="mb-3 flex items-center gap-2">
-            <Clock className="h-3.5 w-3.5 text-white/30" />
-            <h2 className="text-xs font-bold uppercase tracking-widest text-white/30">Recent Activity</h2>
+            <Clock className="h-3.5 w-3.5 text-white/50" />
+            <h2 className="text-xs font-bold uppercase tracking-widest text-white/50">Recent Activity</h2>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {activity.map((item) => {
               const tier = item.displayScore != null ? getTier(item.displayScore) : null
               return (
                 <Link
                   key={item.id}
                   href={`/movie/${item.tmdbId}?type=${item.mediaType === "tv" ? "tv" : "movie"}`}
-                  className="group flex items-center gap-3 rounded-xl bg-white/[0.03] p-3 hover:bg-white/[0.06] active:bg-white/[0.08] transition-colors duration-150"
+                  className="group flex items-center gap-3 rounded-xl bg-white/[0.04] px-3 py-3.5 hover:bg-white/[0.07] active:bg-white/[0.09] transition-colors duration-150"
                 >
                   {/* Poster */}
                   <div className="relative h-16 w-11 flex-shrink-0 overflow-hidden rounded-md bg-zinc-900">
@@ -273,17 +273,17 @@ export default async function FriendsPage() {
       {trending.length > 0 && (
         <section>
           <div className="mb-3 flex items-center gap-2">
-            <TrendingUp className="h-3.5 w-3.5 text-white/30" />
-            <h2 className="text-xs font-bold uppercase tracking-widest text-white/30">Trending This Month</h2>
+            <TrendingUp className="h-3.5 w-3.5 text-white/50" />
+            <h2 className="text-xs font-bold uppercase tracking-widest text-white/50">Trending This Month</h2>
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             {trending.map((item, i) => {
               const tier = getTier(item.avgScore)
               return (
                 <Link
                   key={`${item.tmdbId}-${item.mediaType}`}
                   href={`/movie/${item.tmdbId}?type=${item.mediaType === "tv" ? "tv" : "movie"}`}
-                  className="group flex items-center gap-3 rounded-xl bg-white/[0.03] px-4 py-3 hover:bg-white/[0.06] active:bg-white/[0.08] transition-colors duration-150"
+                  className="group flex items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3.5 hover:bg-white/[0.07] active:bg-white/[0.09] transition-colors duration-150"
                 >
                   <span className="w-5 text-center text-sm font-black text-white/20 tabular-nums">{i + 1}</span>
 

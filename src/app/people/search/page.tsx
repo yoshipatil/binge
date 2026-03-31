@@ -64,7 +64,7 @@ export default function PeopleSearchPage() {
           placeholder="@username or full name..."
           autoCapitalize="none"
           autoCorrect="off"
-          className="h-12 w-full appearance-none rounded-xl border border-white/8 bg-white/5 py-3 pl-10 pr-4 text-base leading-normal text-white placeholder:text-white/25 focus:border-blue-500/40 focus:bg-white/8 focus:outline-none transition-all"
+          className="h-12 w-full appearance-none rounded-xl border border-white/12 bg-white/[0.06] py-3 pl-10 pr-4 text-base leading-normal text-white placeholder:text-white/30 focus:border-blue-500/50 focus:bg-white/[0.08] focus:outline-none transition-all"
         />
       </div>
 
@@ -87,7 +87,7 @@ export default function PeopleSearchPage() {
           {results.map((user) => (
             <div
               key={user.id}
-              className="flex items-center gap-3 rounded-2xl bg-white/[0.03] px-4 py-3.5 hover:bg-white/[0.05] transition-colors"
+              className="flex items-center gap-3 rounded-2xl bg-white/[0.05] px-4 py-3.5 hover:bg-white/[0.08] transition-colors"
             >
               <Link href={`/profile/${user.id}`} className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-full ring-1 ring-white/10">
@@ -123,11 +123,14 @@ export default function PeopleSearchPage() {
       )}
 
       {!loading && !searched && (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-            <Users className="h-7 w-7 text-white/20" />
+        <div className="flex flex-col items-center gap-4 py-20 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/10 ring-1 ring-blue-500/20">
+            <Users className="h-7 w-7 text-blue-400/60" />
           </div>
-          <p className="text-sm text-white/35">Type at least 2 characters</p>
+          <div>
+            <p className="text-sm font-semibold text-white/50">Find people on Binge</p>
+            <p className="mt-0.5 text-xs text-white/25">Search by name or @username</p>
+          </div>
         </div>
       )}
     </div>

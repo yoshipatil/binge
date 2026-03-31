@@ -42,7 +42,7 @@ export default function ProfileMenu() {
     <Sheet open={open} onOpenChange={(o) => { setOpen(o); if (!o) setConfirmDelete(false) }}>
       <SheetTrigger>
         <div
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+          className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
           aria-label="Account options"
         >
           <MoreHorizontal className="h-4 w-4" />
