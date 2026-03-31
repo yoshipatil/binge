@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rateLimit"
 
 // DELETE /api/account — permanently deletes all data for the signed-in user
 export async function DELETE() {
@@ -10,6 +11,9 @@ export async function DELETE() {
   }
 
   const userId = session.user.id
+  // Very strict: 3 attempts per 5-minute window to prevent accidental or scripted deletions
+  const { allowed, retryAfterMs } = checkRateLimit(`account-delete:${userId}`, 3, 5 * 60_000)
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   try {
     // Delete all user data in dependency order

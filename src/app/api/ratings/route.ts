@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { seedEloFromScore, normalizeEloScores, pickComparisonCandidates } from "@/lib/elo"
 import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
 import { syncUser } from "@/lib/syncUser"
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rateLimit"
 
 const VALID_MEDIA_TYPES = ["movie", "tv", "documentary"] as const
 type ValidMediaType = (typeof VALID_MEDIA_TYPES)[number]
@@ -17,6 +18,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const userId = session.user.id
+  const { allowed, retryAfterMs } = checkRateLimit(`ratings-get:${userId}`, 30, 60_000)
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   // Lazy sync — fire-and-forget so existing users get a User record
   // without having to sign out and back in. Doesn't block the response.
@@ -51,6 +54,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const userId = session.user.id
+  const { allowed, retryAfterMs } = checkRateLimit(`ratings-post:${userId}`, 30, 60_000)
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   try {
     const body = await request.json()
@@ -140,6 +145,8 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const userId = session.user.id
+  const { allowed, retryAfterMs } = checkRateLimit(`ratings-delete:${userId}`, 30, 60_000)
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   try {
     const tmdbId = Number(request.nextUrl.searchParams.get("tmdbId"))

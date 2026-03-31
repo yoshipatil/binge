@@ -5,12 +5,15 @@ import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { normalizeEloScores } from "@/lib/elo"
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rateLimit"
 
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  const { allowed, retryAfterMs } = checkRateLimit(`friends-trending:${session.user.id}`, 30, 60_000)
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   const followingIds = (
     await prisma.follow.findMany({

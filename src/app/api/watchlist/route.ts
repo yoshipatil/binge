@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rateLimit"
 
 const VALID_MEDIA_TYPES = ["movie", "tv", "documentary"] as const
 type ValidMediaType = (typeof VALID_MEDIA_TYPES)[number]
@@ -14,6 +15,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const userId = session.user.id
+  const { allowed, retryAfterMs } = checkRateLimit(`watchlist-get:${userId}`, 30, 60_000)
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   try {
     const items = await prisma.watchlist.findMany({
@@ -33,6 +36,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const userId = session.user.id
+  const { allowed, retryAfterMs } = checkRateLimit(`watchlist-post:${userId}`, 60, 60_000)
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   try {
     const body = await request.json()
@@ -69,6 +74,8 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const userId = session.user.id
+  const { allowed, retryAfterMs } = checkRateLimit(`watchlist-delete:${userId}`, 60, 60_000)
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   try {
     const tmdbId = Number(request.nextUrl.searchParams.get("tmdbId"))

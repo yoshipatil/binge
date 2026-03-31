@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rateLimit"
 
 // PATCH /api/users/profile — update own username + bio
 export async function PATCH(request: NextRequest) {
@@ -8,6 +9,8 @@ export async function PATCH(request: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  const { allowed, retryAfterMs } = checkRateLimit(`profile-patch:${session.user.id}`, 10, 60_000)
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   const body = await request.json()
   const username = typeof body.username === "string" ? body.username.trim().toLowerCase() : undefined

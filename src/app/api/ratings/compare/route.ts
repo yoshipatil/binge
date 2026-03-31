@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { calculateElo } from "@/lib/elo"
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rateLimit"
 
 const VALID_MEDIA_TYPES = ["movie", "tv", "documentary"] as const
 type ValidMediaType = (typeof VALID_MEDIA_TYPES)[number]
@@ -16,6 +17,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const userId = session.user.id
+  const { allowed: userAllowed, retryAfterMs } = checkRateLimit(`compare:${userId}`, 120, 60_000)
+  if (!userAllowed) return rateLimitedResponse(retryAfterMs)
 
   try {
     const body = await request.json()

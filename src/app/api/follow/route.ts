@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { checkRateLimit, getClientIp, rateLimitedResponse } from "@/lib/rateLimit"
 
 // GET /api/follow?userId=xxx
 // Returns follower/following counts and whether the current user follows them
 export async function GET(request: NextRequest) {
+  const { allowed, retryAfterMs } = checkRateLimit(
+    `follow-get:${getClientIp(request.headers)}`,
+    60,
+    60_000
+  )
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
+
   const session = await auth()
   const targetId = request.nextUrl.searchParams.get("userId")
 
-  if (!targetId) {
-    return NextResponse.json({ error: "Missing userId" }, { status: 400 })
+  if (!targetId || targetId.length > 128) {
+    return NextResponse.json({ error: "Missing or invalid userId" }, { status: 400 })
   }
 
   const [followersCount, followingCount, isFollowing] = await Promise.all([
@@ -40,12 +48,14 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  const { allowed, retryAfterMs } = checkRateLimit(`follow-post:${session.user.id}`, 30, 60_000)
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   const body = await request.json()
   const followingId = String(body.followingId ?? "").trim()
 
-  if (!followingId) {
-    return NextResponse.json({ error: "Missing followingId" }, { status: 400 })
+  if (!followingId || followingId.length > 128) {
+    return NextResponse.json({ error: "Missing or invalid followingId" }, { status: 400 })
   }
   if (followingId === session.user.id) {
     return NextResponse.json({ error: "Cannot follow yourself" }, { status: 400 })
@@ -84,10 +94,12 @@ export async function DELETE(request: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  const { allowed, retryAfterMs } = checkRateLimit(`follow-delete:${session.user.id}`, 30, 60_000)
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   const followingId = request.nextUrl.searchParams.get("followingId") ?? ""
-  if (!followingId) {
-    return NextResponse.json({ error: "Missing followingId" }, { status: 400 })
+  if (!followingId || followingId.length > 128) {
+    return NextResponse.json({ error: "Missing or invalid followingId" }, { status: 400 })
   }
 
   await prisma.follow.deleteMany({
