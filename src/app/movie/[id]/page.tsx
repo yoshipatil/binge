@@ -54,15 +54,17 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
     notFound()
   }
 
-  // Get normalized display score if rated
+  // Get normalized display score if rated — only shown after 5+ ratings of that media type
   let displayScore: number | undefined
   if (existingRating && userId) {
     const allRatingsForType = await prisma.rating.findMany({
       where: { userId, mediaType: existingRating.mediaType },
     })
-    const normalized = normalizeEloScores(allRatingsForType)
-    const found = normalized.find((r) => r.tmdbId === Number(id))
-    displayScore = found?.displayScore
+    if (allRatingsForType.length >= 5) {
+      const normalized = normalizeEloScores(allRatingsForType)
+      const found = normalized.find((r) => r.tmdbId === Number(id))
+      displayScore = found?.displayScore
+    }
   }
 
   // Compute Binge score (avg display score across all users who rated this title)

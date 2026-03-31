@@ -8,14 +8,32 @@ interface SessionUser {
 }
 
 // Upsert the user's Google profile into our User table.
-// Called eagerly in /profile/me and lazily in the ratings GET route.
-// Neon HTTP adapter doesn't support transactions — use find + create/update.
-export async function syncUser(user: SessionUser): Promise<void> {
+// Returns canonical user ID and whether they have a username set.
+// Callers should update token.sub to the returned ID so all devices converge.
+export async function syncUser(user: SessionUser): Promise<{ canonicalId: string; hasUsername: boolean }> {
   const { id, name, email, image } = user
-  const existing = await prisma.user.findUnique({ where: { id } })
-  if (!existing) {
-    await prisma.user.create({ data: { id, name, email, image } }).catch(() => {})
-  } else if (existing.name !== name || existing.image !== image) {
-    await prisma.user.update({ where: { id }, data: { name, email, image } }).catch(() => {})
+
+  // 1. Prefer lookup by the session ID (fast path, normal case)
+  const byId = await prisma.user.findUnique({ where: { id } })
+  if (byId) {
+    if (byId.name !== name || byId.image !== image) {
+      await prisma.user.update({ where: { id }, data: { name, email, image } }).catch(() => {})
+    }
+    return { canonicalId: byId.id, hasUsername: !!byId.username }
   }
+
+  // 2. No record for this token.sub — check if a user exists with the same email.
+  if (email) {
+    const byEmail = await prisma.user.findFirst({ where: { email } })
+    if (byEmail) {
+      if (byEmail.name !== name || byEmail.image !== image) {
+        await prisma.user.update({ where: { id: byEmail.id }, data: { name, email, image } }).catch(() => {})
+      }
+      return { canonicalId: byEmail.id, hasUsername: !!byEmail.username }
+    }
+  }
+
+  // 3. Genuinely new user — create a record
+  await prisma.user.create({ data: { id, name, email, image } }).catch(() => {})
+  return { canonicalId: id, hasUsername: false }
 }

@@ -32,10 +32,14 @@ export default async function FriendsPage() {
   if (!session?.user?.id) redirect("/sign-in")
   const userId = session.user.id
 
-  const followingIds = (
-    await prisma.follow.findMany({ where: { followerId: userId }, select: { followingId: true } })
-  ).map((f) => f.followingId)
+  const [followingRows, followerRows] = await Promise.all([
+    prisma.follow.findMany({ where: { followerId: userId }, select: { followingId: true } }),
+    prisma.follow.findMany({ where: { followingId: userId }, select: { followerId: true } }),
+  ])
 
+  const followingIds = followingRows.map((f) => f.followingId)
+  const followersCount = followerRows.length
+  const followingCount = followingIds.length
   const hasFollows = followingIds.length > 0
 
   // ── Activity feed ──────────────────────────────────────────────────
@@ -140,12 +144,25 @@ export default async function FriendsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 pb-28 md:pb-8">
       {/* Page header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black tracking-tight">Your Circle</h1>
-          <p className="mt-0.5 text-sm text-white/40">
-            {hasFollows ? "What your people are watching." : "Find people whose taste you trust."}
-          </p>
+          {/* Following / Followers tappable stat links */}
+          <div className="mt-1.5 flex items-center gap-3 text-sm text-white/40">
+            <Link
+              href={`/profile/${userId}/following`}
+              className="hover:text-white/70 transition-colors"
+            >
+              <span className="font-bold text-white/70">{followingCount}</span> Following
+            </Link>
+            <span className="text-white/15">·</span>
+            <Link
+              href={`/profile/${userId}/followers`}
+              className="hover:text-white/70 transition-colors"
+            >
+              <span className="font-bold text-white/70">{followersCount}</span> Followers
+            </Link>
+          </div>
         </div>
         {/* Find friends CTA — always visible */}
         <Link

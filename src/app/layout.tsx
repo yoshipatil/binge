@@ -17,6 +17,7 @@ export const viewport: Viewport = {
   themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
@@ -50,7 +51,7 @@ export default async function RootLayout({
         <Providers session={session}>
           <NavBar />
           {/* pb-20 on mobile reserves space above the fixed BottomNav; cleared on md+ */}
-          <main className="flex-1 pb-20 md:pb-0">
+          <main className="flex-1 pb-[calc(80px+env(safe-area-inset-bottom))] md:pb-0">
             {children}
           </main>
           {/* Footer — TMDB attribution required by ToS, visible on all screen sizes */}

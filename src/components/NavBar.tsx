@@ -14,6 +14,7 @@ const links = [
   { href: "/watchlist", label: "Watchlist", icon: Bookmark },
   { href: "/recommendations", label: "For You", icon: Sparkles },
   { href: "/people", label: "Circle", icon: Users },
+  { href: "/search", label: "Search", icon: Search },
 ]
 
 export default function NavBar() {
@@ -21,7 +22,7 @@ export default function NavBar() {
   const { data: session } = useSession()
 
   return (
-    <nav className="sticky top-0 z-50 bg-black/70 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 bg-black/70 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center">

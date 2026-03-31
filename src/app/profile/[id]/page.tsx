@@ -5,25 +5,26 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { normalizeEloScores } from "@/lib/elo"
 import { getTier } from "@/lib/tiers"
-import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
+import { getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
 import FollowButton from "@/components/FollowButton"
-import { Star, Zap } from "lucide-react"
+import { Star, Zap, AtSign, Pencil } from "lucide-react"
 
 interface ProfilePageProps {
   params: Promise<{ id: string }>
 }
 
-// Fetch title for a single rated item — fails gracefully to the tmdbId
-async function fetchTitle(tmdbId: number, mediaType: string): Promise<string> {
+// Fetch title + poster for a single rated item — fails gracefully
+async function fetchTMDB(tmdbId: number, mediaType: string): Promise<{ title: string; poster: string | null }> {
   try {
     const details = mediaType === "tv"
       ? await getTVDetails(tmdbId)
       : await getMovieDetails(tmdbId)
-    return (details as { title?: string; name?: string }).title
+    const title = (details as { title?: string; name?: string }).title
       ?? (details as { name?: string }).name
       ?? String(tmdbId)
+    return { title, poster: (details as { poster_path?: string | null }).poster_path ?? null }
   } catch {
-    return String(tmdbId)
+    return { title: String(tmdbId), poster: null }
   }
 }
 
@@ -41,6 +42,8 @@ function getCompatibilityLabel(score: number): string {
   if (score >= 50) return "Some common ground"
   return "Different tastes"
 }
+
+const RATING_THRESHOLD = 5
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { id } = await params
@@ -78,21 +81,26 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const normalizedMovies = normalizeEloScores(movieRatings)
   const normalizedTV = normalizeEloScores(tvRatings)
 
-  const top5Movies = [...normalizedMovies]
-    .sort((a, b) => b.displayScore - a.displayScore)
-    .slice(0, 5)
+  // Only show rankings if threshold met
+  const showMovieRankings = movieRatings.length >= RATING_THRESHOLD
+  const showTVRankings = tvRatings.length >= RATING_THRESHOLD
 
-  const top5TV = [...normalizedTV]
-    .sort((a, b) => b.displayScore - a.displayScore)
-    .slice(0, 5)
+  const top5Movies = showMovieRankings
+    ? [...normalizedMovies].sort((a, b) => b.displayScore - a.displayScore).slice(0, 5)
+    : []
 
-  // Fetch real titles from TMDB for all top items in parallel
-  const [movieTitles, tvTitles] = await Promise.all([
-    Promise.all(top5Movies.map((r) => fetchTitle(r.tmdbId, r.mediaType))),
-    Promise.all(top5TV.map((r) => fetchTitle(r.tmdbId, "tv"))),
+  const top5TV = showTVRankings
+    ? [...normalizedTV].sort((a, b) => b.displayScore - a.displayScore).slice(0, 5)
+    : []
+
+  // Fetch real titles + posters from TMDB for all top items in parallel
+  const [movieData, tvData] = await Promise.all([
+    Promise.all(top5Movies.map((r) => fetchTMDB(r.tmdbId, r.mediaType))),
+    Promise.all(top5TV.map((r) => fetchTMDB(r.tmdbId, "tv"))),
   ])
 
   const hasAnyRankings = top5Movies.length > 0 || top5TV.length > 0
+  const hasNoRatings = totalRatings === 0
 
   // ── Taste Compatibility ──────────────────────────────────────────────
   // Only computed when viewing another user's profile while signed in
@@ -102,14 +110,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   if (!isOwnProfile && currentUserId) {
     const viewerRatings = await prisma.rating.findMany({ where: { userId: currentUserId } })
 
-    // Normalize viewer's scores per media type (same split as profile user)
     const viewerMovieRatings = viewerRatings.filter((r) => r.mediaType !== "tv")
     const viewerTVRatings = viewerRatings.filter((r) => r.mediaType === "tv")
 
     const normalizedViewerMovies = normalizeEloScores(viewerMovieRatings)
     const normalizedViewerTV = normalizeEloScores(viewerTVRatings)
 
-    // Build lookup: "tmdbId:mediaType" → displayScore
     const viewerScoreMap = new Map<string, number>()
     for (const r of [...normalizedViewerMovies, ...normalizedViewerTV]) {
       viewerScoreMap.set(`${r.tmdbId}:${r.mediaType}`, r.displayScore)
@@ -120,8 +126,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       profileScoreMap.set(`${r.tmdbId}:${r.mediaType}`, r.displayScore)
     }
 
-    // For each title rated by both users, compute per-title similarity (0–1)
-    // similarity = 1 - abs(scoreA - scoreB) / 10
     const similarities: number[] = []
     for (const [key, viewerScore] of viewerScoreMap) {
       const profileScore = profileScoreMap.get(key)
@@ -130,7 +134,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       }
     }
 
-    // Require at least 3 overlapping titles for a meaningful score
     if (similarities.length >= 3) {
       const avg = similarities.reduce((sum, s) => sum + s, 0) / similarities.length
       compatibility = Math.round(avg * 100)
@@ -140,8 +143,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 pb-24 md:pb-8">
-      {/* Profile header */}
-      <div className="flex items-start gap-5">
+      {/* ── Profile Header ── */}
+      <div className="flex items-start gap-4">
+        {/* Avatar */}
         <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-white/10">
           {profileUser.image ? (
             <Image
@@ -160,46 +164,82 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           )}
         </div>
 
+        {/* Name + username + bio */}
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-black tracking-tight truncate">
             {profileUser.name ?? "Anonymous"}
           </h1>
-
-          <div className="mt-2 flex gap-5 text-sm">
-            <div className="text-center">
-              <p className="font-bold text-white">{totalRatings}</p>
-              <p className="text-[11px] text-white/40">Ranked</p>
-            </div>
-            <div className="text-center">
-              <p className="font-bold text-white">{followersCount}</p>
-              <p className="text-[11px] text-white/40">Followers</p>
-            </div>
-            <div className="text-center">
-              <p className="font-bold text-white">{followingCount}</p>
-              <p className="text-[11px] text-white/40">Following</p>
-            </div>
-          </div>
+          {profileUser.username && (
+            <p className="flex items-center gap-0.5 text-sm text-white/40 mt-0.5">
+              <AtSign className="h-3.5 w-3.5" />
+              {profileUser.username}
+            </p>
+          )}
+          {profileUser.bio && (
+            <p className="mt-2 text-sm text-white/55 leading-relaxed line-clamp-3">
+              {profileUser.bio}
+            </p>
+          )}
         </div>
 
-        {!isOwnProfile && currentUserId && (
-          <FollowButton targetId={id} initialIsFollowing={isFollowing} />
-        )}
-        {!isOwnProfile && !currentUserId && (
-          <a
-            href="/sign-in"
-            className="flex-shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
-          >
-            Sign in to follow
-          </a>
-        )}
+        {/* Action button */}
+        <div className="flex-shrink-0">
+          {isOwnProfile ? (
+            <Link
+              href="/profile/setup"
+              className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white transition-all"
+            >
+              <Pencil className="h-3 w-3" />
+              Edit
+            </Link>
+          ) : currentUserId ? (
+            <FollowButton targetId={id} initialIsFollowing={isFollowing} />
+          ) : (
+            <a
+              href="/sign-in"
+              className="flex-shrink-0 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 transition-colors"
+            >
+              Follow
+            </a>
+          )}
+        </div>
       </div>
 
-      {/* ── Taste Compatibility Card ──────────────────────────────────── */}
+      {/* ── Stats row ── */}
+      <div className="mt-5 flex gap-5">
+        <div className="text-center">
+          <p className="font-black text-white tabular-nums">{totalRatings}</p>
+          <p className="text-[11px] text-white/40">Ranked</p>
+        </div>
+        <Link
+          href={`/profile/${id}/followers`}
+          className="text-center group"
+        >
+          <p className="font-black text-white tabular-nums group-hover:text-blue-400 transition-colors">
+            {followersCount}
+          </p>
+          <p className="text-[11px] text-white/40 group-hover:text-white/60 transition-colors">
+            Followers
+          </p>
+        </Link>
+        <Link
+          href={`/profile/${id}/following`}
+          className="text-center group"
+        >
+          <p className="font-black text-white tabular-nums group-hover:text-blue-400 transition-colors">
+            {followingCount}
+          </p>
+          <p className="text-[11px] text-white/40 group-hover:text-white/60 transition-colors">
+            Following
+          </p>
+        </Link>
+      </div>
+
+      {/* ── Taste Compatibility Card ── */}
       {!isOwnProfile && currentUserId && (
         <div className="mt-5 rounded-2xl border border-white/[0.06] bg-white/[0.035] px-5 py-4">
           {compatibility !== null ? (
             <div className="flex items-center justify-between gap-4">
-              {/* Left: score callout */}
               <div>
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <Zap className="h-3 w-3 text-white/30" />
@@ -214,8 +254,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   Based on {compatibilityOverlapCount} titles you&apos;ve both seen
                 </p>
               </div>
-
-              {/* Right: label badge */}
               <div className={`flex-shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold ${
                 compatibility >= 80
                   ? "bg-blue-500/15 text-blue-400"
@@ -247,16 +285,18 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
       <div className="my-6 h-px bg-white/5" />
 
-      {!hasAnyRankings && (
+      {/* ── Empty state ── */}
+      {hasNoRatings && (
         <div className="flex flex-col items-center gap-2 py-16 text-center">
           <Star className="h-8 w-8 text-white/15" />
           <p className="text-sm text-white/40">No rankings yet</p>
         </div>
       )}
 
+      {/* ── Rankings ── */}
       <div className="flex flex-col gap-8">
         {/* Top Movies */}
-        {top5Movies.length > 0 && (
+        {showMovieRankings && top5Movies.length > 0 ? (
           <RankingSection
             title="Top Movies"
             items={top5Movies.map((r, i) => ({
@@ -264,13 +304,21 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               tmdbId: r.tmdbId,
               mediaType: r.mediaType,
               displayScore: r.displayScore,
-              title: movieTitles[i],
+              title: movieData[i].title,
+              poster: movieData[i].poster,
             }))}
           />
-        )}
+        ) : movieRatings.length > 0 && movieRatings.length < RATING_THRESHOLD ? (
+          <ThresholdNudge
+            type="movies"
+            ratedCount={movieRatings.length}
+            needed={RATING_THRESHOLD}
+            isOwnProfile={isOwnProfile}
+          />
+        ) : null}
 
         {/* Top TV Shows */}
-        {top5TV.length > 0 && (
+        {showTVRankings && top5TV.length > 0 ? (
           <RankingSection
             title="Top TV Shows"
             items={top5TV.map((r, i) => ({
@@ -278,10 +326,18 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               tmdbId: r.tmdbId,
               mediaType: "tv" as const,
               displayScore: r.displayScore,
-              title: tvTitles[i],
+              title: tvData[i].title,
+              poster: tvData[i].poster,
             }))}
           />
-        )}
+        ) : tvRatings.length > 0 && tvRatings.length < RATING_THRESHOLD ? (
+          <ThresholdNudge
+            type="TV shows"
+            ratedCount={tvRatings.length}
+            needed={RATING_THRESHOLD}
+            isOwnProfile={isOwnProfile}
+          />
+        ) : null}
       </div>
     </div>
   )
@@ -298,11 +354,12 @@ function RankingSection({
     mediaType: string
     displayScore: number
     title: string
+    poster: string | null
   }[]
 }) {
   return (
     <div>
-      <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-white/40">
+      <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">
         {title}
       </h2>
       <div className="flex flex-col gap-1.5">
@@ -312,20 +369,65 @@ function RankingSection({
             <Link
               key={item.tmdbId}
               href={`/movie/${item.tmdbId}?type=${item.mediaType === "tv" ? "tv" : "movie"}`}
-              className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-4 py-3 hover:bg-white/[0.05] transition-colors"
+              className="group flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2.5 hover:bg-white/[0.06] active:bg-white/[0.08] transition-colors duration-150"
             >
-              <span className="w-5 text-center text-sm font-bold text-white/25">
+              <span className="w-5 text-center text-xs font-bold text-white/25 tabular-nums">
                 {item.rank}
               </span>
-              <div className={`h-2 w-2 rounded-full flex-shrink-0 ${tier.dotColor}`} />
-              <span className="flex-1 text-sm text-white/80 truncate">{item.title}</span>
-              <span className="text-sm font-black text-white">
-                {item.displayScore.toFixed(1)}
+
+              {/* Poster thumbnail */}
+              <div className="relative h-12 w-8 flex-shrink-0 overflow-hidden rounded bg-zinc-900">
+                {item.poster ? (
+                  <Image
+                    src={getPosterUrl(item.poster, "w154")}
+                    alt={item.title}
+                    fill
+                    sizes="32px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-white/5" />
+                )}
+              </div>
+
+              <span className="flex-1 text-sm text-white/80 truncate group-hover:text-white transition-colors">
+                {item.title}
               </span>
+
+              {/* Score badge */}
+              <div className={`flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-full ${tier.dotColor}`}>
+                <span className="text-xs font-black">{item.displayScore.toFixed(1)}</span>
+              </div>
             </Link>
           )
         })}
       </div>
+    </div>
+  )
+}
+
+function ThresholdNudge({
+  type,
+  ratedCount,
+  needed,
+  isOwnProfile,
+}: {
+  type: string
+  ratedCount: number
+  needed: number
+  isOwnProfile: boolean
+}) {
+  const remaining = needed - ratedCount
+  return (
+    <div className="rounded-xl border border-dashed border-white/10 px-5 py-4">
+      <p className="text-sm font-semibold text-white/50">
+        {isOwnProfile
+          ? `Rate ${remaining} more ${type} to unlock your rankings`
+          : `Not enough ${type} ranked yet`}
+      </p>
+      <p className="mt-0.5 text-xs text-white/25">
+        {ratedCount}/{needed} rated
+      </p>
     </div>
   )
 }

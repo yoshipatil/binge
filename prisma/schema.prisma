@@ -57,10 +57,13 @@ model User {
   name      String?
   email     String?
   image     String?
+  username  String?  @unique  // @handle, set by user, searchable
+  bio       String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([name])
+  @@index([username])
 }
 
 // Follow relationships — follower follows following.

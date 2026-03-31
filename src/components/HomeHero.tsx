@@ -106,7 +106,7 @@ export default function HomeHero({ featured }: HomeHeroProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search movies, shows, documentaries..."
-              className="h-12 w-full rounded-xl border border-white/8 bg-white/5 pl-10 pr-10 text-base text-white placeholder:text-white/30 backdrop-blur-2xl transition-all focus:border-blue-500/35 focus:bg-white/8 focus:outline-none focus:shadow-[0_0_24px_rgba(37,99,235,0.18)]"
+              className="h-12 w-full appearance-none rounded-xl border border-white/8 bg-white/5 py-3 pl-10 pr-10 text-base leading-normal text-white placeholder:text-white/30 backdrop-blur-2xl transition-all focus:border-blue-500/35 focus:bg-white/8 focus:outline-none focus:shadow-[0_0_24px_rgba(37,99,235,0.18)]"
             />
             {query && (
               <button

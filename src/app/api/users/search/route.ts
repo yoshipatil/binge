@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 
-// GET /api/users/search?q=name
-// Returns users matching the query, excluding the current user.
-// Used by the people search page and profile discovery.
+// GET /api/users/search?q=name_or_username
+// Returns users matching by name or @username, excludes current user.
+// Also returns isFollowing per result so the UI can show correct button state.
 export async function GET(request: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) {
@@ -16,22 +16,38 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ users: [] })
   }
 
-  // Case-insensitive name search, exclude the current user
-  const users = await prisma.user.findMany({
-    where: {
-      AND: [
-        { id: { not: session.user.id } },
-        {
-          OR: [
-            { name: { contains: q, mode: "insensitive" } },
-            { email: { contains: q, mode: "insensitive" } },
-          ],
-        },
-      ],
-    },
-    select: { id: true, name: true, image: true },
-    take: 20,
-  })
+  // Strip leading @ for username search
+  const cleaned = q.startsWith("@") ? q.slice(1) : q
 
-  return NextResponse.json({ users })
+  const [users, following] = await Promise.all([
+    prisma.user.findMany({
+      where: {
+        AND: [
+          { id: { not: session.user.id } },
+          {
+            OR: [
+              { name: { contains: cleaned, mode: "insensitive" } },
+              { username: { contains: cleaned, mode: "insensitive" } },
+              { email: { contains: cleaned, mode: "insensitive" } },
+            ],
+          },
+        ],
+      },
+      select: { id: true, name: true, image: true, username: true },
+      take: 20,
+    }),
+    prisma.follow.findMany({
+      where: { followerId: session.user.id },
+      select: { followingId: true },
+    }),
+  ])
+
+  const followingSet = new Set(following.map((f) => f.followingId))
+
+  return NextResponse.json({
+    users: users.map((u) => ({
+      ...u,
+      isFollowing: followingSet.has(u.id),
+    })),
+  })
 }

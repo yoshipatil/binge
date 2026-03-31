@@ -4,13 +4,13 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Home, Star, Bookmark, Sparkles, Users, LogIn } from "lucide-react"
+import { Home, Star, Search, Sparkles, Users, LogIn } from "lucide-react"
 import AccountMenu from "@/components/AccountMenu"
 
 const links = [
   { href: "/", label: "Home", icon: Home },
   { href: "/rankings", label: "Rankings", icon: Star },
-  { href: "/watchlist", label: "Watchlist", icon: Bookmark },
+  { href: "/search", label: "Search", icon: Search },
   { href: "/recommendations", label: "For You", icon: Sparkles },
   { href: "/people", label: "Circle", icon: Users },
 ]

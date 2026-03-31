@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Search, Users } from "lucide-react"
+import { ArrowLeft, Search, Users, AtSign } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import FollowButton from "@/components/FollowButton"
 
@@ -11,6 +11,8 @@ interface UserResult {
   id: string
   name: string | null
   image: string | null
+  username: string | null
+  isFollowing: boolean
 }
 
 export default function PeopleSearchPage() {
@@ -41,14 +43,14 @@ export default function PeopleSearchPage() {
       <div className="mb-6 flex items-center gap-3">
         <Link
           href="/people"
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
-          aria-label="Back to Friends"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+          aria-label="Back to Circle"
         >
           <ArrowLeft className="h-4 w-4 text-white/60" />
         </Link>
         <div>
           <h1 className="text-xl font-black tracking-tight">Find People</h1>
-          <p className="text-xs text-white/40">Search by name to follow people</p>
+          <p className="text-xs text-white/40">Search by name or @username</p>
         </div>
       </div>
 
@@ -59,17 +61,22 @@ export default function PeopleSearchPage() {
           autoFocus
           value={query}
           onChange={(e) => search(e.target.value)}
-          placeholder="Search by name..."
-          className="h-12 w-full rounded-xl border border-white/8 bg-white/5 pl-10 pr-4 text-base text-white placeholder:text-white/25 focus:border-blue-500/40 focus:bg-white/8 focus:outline-none transition-all"
+          placeholder="@username or full name..."
+          autoCapitalize="none"
+          autoCorrect="off"
+          className="h-12 w-full appearance-none rounded-xl border border-white/8 bg-white/5 py-3 pl-10 pr-4 text-base leading-normal text-white placeholder:text-white/25 focus:border-blue-500/40 focus:bg-white/8 focus:outline-none transition-all"
         />
       </div>
 
       {loading && (
         <div className="flex flex-col gap-2.5">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 rounded-xl bg-white/[0.03] px-4 py-3">
-              <Skeleton className="h-10 w-10 rounded-full bg-white/8" />
-              <Skeleton className="h-4 w-36 bg-white/8" />
+            <div key={i} className="flex items-center gap-3 rounded-2xl bg-white/[0.03] px-4 py-3.5">
+              <Skeleton className="h-11 w-11 rounded-full bg-white/8 flex-shrink-0" />
+              <div className="flex-1 flex flex-col gap-1.5">
+                <Skeleton className="h-3.5 w-28 bg-white/8" />
+                <Skeleton className="h-3 w-20 bg-white/5" />
+              </div>
             </div>
           ))}
         </div>
@@ -78,20 +85,31 @@ export default function PeopleSearchPage() {
       {!loading && results.length > 0 && (
         <div className="flex flex-col gap-2">
           {results.map((user) => (
-            <div key={user.id} className="flex items-center gap-3 rounded-xl bg-white/[0.03] px-4 py-3">
+            <div
+              key={user.id}
+              className="flex items-center gap-3 rounded-2xl bg-white/[0.03] px-4 py-3.5 hover:bg-white/[0.05] transition-colors"
+            >
               <Link href={`/profile/${user.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-1 ring-white/10">
+                <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-full ring-1 ring-white/10">
                   {user.image ? (
-                    <Image src={user.image} alt={user.name ?? ""} fill sizes="40px" className="object-cover" />
+                    <Image src={user.image} alt={user.name ?? ""} fill sizes="44px" className="object-cover" />
                   ) : (
                     <div className="h-full w-full bg-blue-500/20 flex items-center justify-center">
                       <span className="text-sm font-bold text-blue-400">{user.name?.[0]?.toUpperCase() ?? "?"}</span>
                     </div>
                   )}
                 </div>
-                <span className="text-sm font-semibold text-white/85 truncate">{user.name ?? "Anonymous"}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white/90 truncate">{user.name ?? "Anonymous"}</p>
+                  {user.username && (
+                    <p className="flex items-center gap-0.5 text-xs text-white/35 truncate">
+                      <AtSign className="h-3 w-3" />
+                      {user.username}
+                    </p>
+                  )}
+                </div>
               </Link>
-              <FollowButton targetId={user.id} initialIsFollowing={false} />
+              <FollowButton targetId={user.id} initialIsFollowing={user.isFollowing} />
             </div>
           ))}
         </div>
@@ -100,7 +118,7 @@ export default function PeopleSearchPage() {
       {!loading && searched && results.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-16 text-center">
           <p className="text-sm font-semibold text-white/50">No one found for &quot;{query}&quot;</p>
-          <p className="text-xs text-white/25">Try a different name</p>
+          <p className="text-xs text-white/25">Try a name or @username</p>
         </div>
       )}
 

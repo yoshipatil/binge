@@ -136,6 +136,31 @@ function MoviePosterCard({ movie, mediaType }: { movie: TMDBMovie; mediaType: "m
               sizes="130px"
               className="object-cover transition-transform duration-300 group-hover/card:scale-105"
             />
+
+            {/* Desktop hover overlay — hidden on touch devices */}
+            <div className="absolute inset-0 hidden flex-col items-center justify-end gap-1.5 bg-black/70 p-2 opacity-0 transition-opacity duration-200 group-hover/card:opacity-100 md:flex">
+              <RateMovieDialog
+                movie={movie}
+                mediaType={mediaType}
+                trigger={
+                  <Button
+                    size="sm"
+                    className="h-8 w-full gap-1 border-0 bg-blue-600 text-xs text-white hover:bg-blue-500"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    <Star className="h-3 w-3" />
+                    Rate
+                  </Button>
+                }
+              />
+              <button
+                onClick={(e) => { e.preventDefault(); toggleWatchlist() }}
+                className="flex h-8 w-full items-center justify-center gap-1 rounded-md border border-white/15 bg-white/10 text-xs font-medium text-white/80 transition-colors hover:bg-white/20"
+              >
+                {inWatchlist ? <BookmarkCheck className="h-3 w-3" /> : <Bookmark className="h-3 w-3" />}
+                {inWatchlist ? "Saved" : "Watchlist"}
+              </button>
+            </div>
           </div>
 
           {/* Title below poster */}
