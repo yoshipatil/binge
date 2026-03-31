@@ -51,11 +51,11 @@ export default async function RootLayout({
         <Providers session={session}>
           <NavBar />
           {/* pb-20 on mobile reserves space above the fixed BottomNav; cleared on md+ */}
-          <main className="flex-1 pb-[calc(80px+env(safe-area-inset-bottom))] md:pb-0">
+          <main className="flex-1">
             {children}
           </main>
           {/* Footer — TMDB attribution required by ToS, visible on all screen sizes */}
-          <footer className="border-t border-white/5 pb-24 pt-3 text-center text-[11px] text-white/20 md:pb-4 md:pt-4 md:text-xs md:text-white/25">
+          <footer className="border-t border-white/5 pb-[calc(76px+env(safe-area-inset-bottom))] pt-3 text-center text-[11px] text-white/20 md:pb-4 md:pt-4 md:text-xs md:text-white/25">
             This product uses the TMDB API but is not endorsed or certified by TMDB.
             {" · "}
             <a href="/privacy" className="underline-offset-2 hover:text-white/40 hover:underline">

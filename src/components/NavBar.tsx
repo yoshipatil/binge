@@ -3,10 +3,11 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { useSession, signOut } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { Star, Bookmark, Sparkles, Home, LogIn, Search, Users } from "lucide-react"
 import BingeLogo from "@/components/BingeLogo"
-import AccountMenu from "@/components/AccountMenu"
+
+
 
 const links = [
   { href: "/", label: "Home", icon: Home },
@@ -65,22 +66,21 @@ export default function NavBar() {
         {/* Desktop auth */}
         <div className="hidden md:flex items-center gap-2">
           {session?.user ? (
-            <AccountMenu
-              trigger={
-                <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5 cursor-pointer">
-                  {session.user.image && (
-                    <Image
-                      src={session.user.image}
-                      alt={session.user.name ?? ""}
-                      width={28}
-                      height={28}
-                      className="rounded-full ring-1 ring-white/10"
-                    />
-                  )}
-                  <span className="text-sm text-white/50 hover:text-white/80">{session.user.name?.split(" ")[0]}</span>
-                </div>
-              }
-            />
+            <Link
+              href="/profile/me"
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5"
+            >
+              {session.user.image && (
+                <Image
+                  src={session.user.image}
+                  alt={session.user.name ?? ""}
+                  width={28}
+                  height={28}
+                  className="rounded-full ring-1 ring-white/10"
+                />
+              )}
+              <span className="text-sm text-white/50 hover:text-white/80">{session.user.name?.split(" ")[0]}</span>
+            </Link>
           ) : (
             <Link
               href="/sign-in"

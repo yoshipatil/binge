@@ -173,14 +173,14 @@ function MoviePosterCard({ movie, mediaType }: { movie: TMDBMovie; mediaType: "m
         </Link>
       </div>
 
-      {/* Bottom sheet on long-press */}
+      {/* Bottom sheet on long-press — z-[100] so it sits above the fixed BottomNav (z-50) */}
       {sheetOpen && (
         <>
           <div
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm"
             onClick={() => setSheetOpen(false)}
           />
-          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl border-t border-white/10 bg-zinc-900 shadow-2xl">
+          <div className="fixed bottom-0 left-0 right-0 z-[100] rounded-t-2xl border-t border-white/10 bg-zinc-900 shadow-2xl" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
             <div className="flex justify-center pb-1 pt-3">
               <div className="h-1 w-10 rounded-full bg-white/20" />
             </div>
@@ -188,7 +188,7 @@ function MoviePosterCard({ movie, mediaType }: { movie: TMDBMovie; mediaType: "m
               <p className="truncate text-base font-bold text-white">{title}</p>
               <p className="mt-0.5 text-sm text-white/40">{year}</p>
             </div>
-            <div className="flex flex-col gap-2 px-4 pb-8 pt-3">
+            <div className="flex flex-col gap-2 px-4 pb-6 pt-3">
               <RateMovieDialog
                 movie={movie}
                 mediaType={mediaType}

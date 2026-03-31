@@ -5,7 +5,8 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Home, Star, Search, Sparkles, Users, LogIn } from "lucide-react"
-import AccountMenu from "@/components/AccountMenu"
+
+
 
 const links = [
   { href: "/", label: "Home", icon: Home },
@@ -47,26 +48,25 @@ export default function BottomNav() {
 
         {/* Auth tab */}
         {session?.user ? (
-          <AccountMenu
-            trigger={
-              <div className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px] cursor-pointer">
-                <div className="flex h-[34px] w-[34px] items-center justify-center">
-                  {session.user.image ? (
-                    <Image
-                      src={session.user.image}
-                      alt={session.user.name ?? ""}
-                      width={28}
-                      height={28}
-                      className="rounded-full ring-1 ring-white/20"
-                    />
-                  ) : (
-                    <div className="h-7 w-7 rounded-full bg-blue-500/30" />
-                  )}
-                </div>
-                <span className="text-[10px] font-medium tracking-wide text-white/30">Me</span>
-              </div>
-            }
-          />
+          <Link
+            href="/profile/me"
+            className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px]"
+          >
+            <div className="flex h-[34px] w-[34px] items-center justify-center">
+              {session.user.image ? (
+                <Image
+                  src={session.user.image}
+                  alt={session.user.name ?? ""}
+                  width={30}
+                  height={30}
+                  className="rounded-full ring-1 ring-white/20"
+                />
+              ) : (
+                <div className="h-[30px] w-[30px] rounded-full bg-blue-500/30" />
+              )}
+            </div>
+            <span className="text-[10px] font-medium tracking-wide text-white/30">Me</span>
+          </Link>
         ) : (
           <Link
             href="/sign-in"
