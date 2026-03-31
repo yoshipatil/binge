@@ -1,0 +1,128 @@
+name: Code Review
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Rule Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Rule 1: No $transaction() in app code ──────────────────────────────
+      - name: Check — no $transaction()
+        run: |
+          if grep -rn '\$transaction(' src/ --include='*.ts' --include='*.tsx' \
+            | grep -v 'node_modules' \
+            | grep -v 'generated/'; then
+            echo ""
+            echo "❌ VIOLATION: \$transaction() is banned — Neon HTTP adapter doesn't support it."
+            echo "   Use sequential find + create/update instead."
+            exit 1
+          else
+            echo "✅ No \$transaction() calls found."
+          fi
+
+      # ── Rule 2: No .upsert() in app code ──────────────────────────────────
+      - name: Check — no .upsert()
+        run: |
+          if grep -rn '\.upsert(' src/ --include='*.ts' --include='*.tsx' \
+            | grep -v 'node_modules' \
+            | grep -v 'generated/'; then
+            echo ""
+            echo "❌ VIOLATION: .upsert() is banned — Neon HTTP adapter doesn't support it."
+            echo "   Use prisma.model.findUnique() then .create() or .update() manually."
+            exit 1
+          else
+            echo "✅ No .upsert() calls found."
+          fi
+
+      # ── Rule 3: middleware.ts must not import from @/auth ──────────────────
+      - name: Check — middleware imports only @/auth.config
+        run: |
+          if grep -n 'from "@/auth"' src/middleware.ts 2>/dev/null \
+            || grep -n "from '@/auth'" src/middleware.ts 2>/dev/null; then
+            echo ""
+            echo "❌ VIOLATION: src/middleware.ts imports from @/auth."
+            echo "   Middleware runs on the Edge runtime. Use @/auth.config only."
+            echo "   @/auth pulls in Prisma which exceeds the 1MB Edge Function limit."
+            exit 1
+          else
+            echo "✅ middleware.ts imports are clean."
+          fi
+
+      # ── Rule 4: Every API route must auth-gate before DB access ───────────
+      - name: Check — API routes auth-gate before Prisma
+        run: |
+          VIOLATIONS=0
+          for file in $(find src/app/api -name 'route.ts'); do
+            # Skip if file doesn't use prisma at all
+            if ! grep -q 'prisma\.' "$file"; then
+              continue
+            fi
+            # File uses prisma — must also call auth() and check session
+            if ! grep -q 'await auth()' "$file"; then
+              echo "❌ $file — uses Prisma but never calls auth()"
+              VIOLATIONS=$((VIOLATIONS + 1))
+            elif ! grep -qP 'session\?\.user\?\.id|session\.user\.id' "$file"; then
+              echo "❌ $file — calls auth() but never checks session?.user?.id before DB access"
+              VIOLATIONS=$((VIOLATIONS + 1))
+            fi
+          done
+          if [ "$VIOLATIONS" -gt 0 ]; then
+            echo ""
+            echo "❌ VIOLATION: $VIOLATIONS API route(s) missing auth guard."
+            echo "   Every route that touches the DB must do:"
+            echo "     const session = await auth()"
+            echo "     if (!session?.user?.id) return 401"
+            exit 1
+          else
+            echo "✅ All API routes auth-gate before DB access."
+          fi
+
+      # ── Rule 5: No raw user input passed directly to Prisma ───────────────
+      - name: Check — no raw req.body/query params directly in Prisma calls
+        run: |
+          VIOLATIONS=0
+          for file in $(find src/app/api -name 'route.ts'); do
+            # Look for patterns like prisma.X({ where: { id: body.Y } }) or
+            # prisma.X({ data: { field: params.Y } }) without prior casting/validation
+            # We flag: body.<field> or params.get('<field>') used directly in prisma call
+            # on the same line (simple heuristic — catches the obvious cases)
+            if grep -nP 'prisma\.\w+\([^)]*body\.[a-zA-Z]|prisma\.\w+\([^)]*\.get\(' "$file" | grep -v '//'; then
+              echo "⚠️  $file — possible raw input in Prisma call (verify validation exists)"
+              VIOLATIONS=$((VIOLATIONS + 1))
+            fi
+          done
+          if [ "$VIOLATIONS" -gt 0 ]; then
+            echo ""
+            echo "⚠️  WARNING: $VIOLATIONS file(s) may pass raw user input to Prisma."
+            echo "   Cast and validate all body fields and query params before use."
+            echo "   (This check uses heuristics — review the flagged lines manually.)"
+            # Warning only — don't fail the build, requires manual review
+          else
+            echo "✅ No obvious raw input passed to Prisma."
+          fi
+
+      # ── Summary ────────────────────────────────────────────────────────────
+      - name: Summary
+        if: success()
+        run: |
+          echo ""
+          echo "════════════════════════════════════"
+          echo "  ✅ All code review checks passed"
+          echo "════════════════════════════════════"
