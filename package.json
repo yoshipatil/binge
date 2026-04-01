@@ -14,6 +14,7 @@
     "@neondatabase/serverless": "^1.0.2",
     "@prisma/adapter-neon": "^7.5.0",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/blob": "^2.3.2",
     "@vercel/og": "^0.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

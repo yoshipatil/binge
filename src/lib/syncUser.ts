@@ -16,8 +16,12 @@ export async function syncUser(user: SessionUser): Promise<{ canonicalId: string
   // 1. Prefer lookup by the session ID (fast path, normal case)
   const byId = await prisma.user.findUnique({ where: { id } })
   if (byId) {
-    if (byId.name !== name || byId.image !== image) {
-      await prisma.user.update({ where: { id }, data: { name, email, image } }).catch(() => {})
+    // Update name/email always. Only update image if user has no custom upload
+    // (i.e. googleImage is null or image === googleImage — they haven't overridden it).
+    const hasCustomAvatar = byId.googleImage && byId.image !== byId.googleImage
+    const imageUpdate = hasCustomAvatar ? {} : { image, googleImage: image }
+    if (byId.name !== name || !hasCustomAvatar) {
+      await prisma.user.update({ where: { id }, data: { name, email, ...imageUpdate } }).catch(() => {})
     }
     return { canonicalId: byId.id, hasUsername: !!byId.username }
   }
@@ -26,14 +30,16 @@ export async function syncUser(user: SessionUser): Promise<{ canonicalId: string
   if (email) {
     const byEmail = await prisma.user.findFirst({ where: { email } })
     if (byEmail) {
-      if (byEmail.name !== name || byEmail.image !== image) {
-        await prisma.user.update({ where: { id: byEmail.id }, data: { name, email, image } }).catch(() => {})
+      const hasCustomAvatar = byEmail.googleImage && byEmail.image !== byEmail.googleImage
+      const imageUpdate = hasCustomAvatar ? {} : { image, googleImage: image }
+      if (byEmail.name !== name || !hasCustomAvatar) {
+        await prisma.user.update({ where: { id: byEmail.id }, data: { name, email, ...imageUpdate } }).catch(() => {})
       }
       return { canonicalId: byEmail.id, hasUsername: !!byEmail.username }
     }
   }
 
-  // 3. Genuinely new user — create a record
-  await prisma.user.create({ data: { id, name, email, image } }).catch(() => {})
+  // 3. Genuinely new user — create a record, store Google image in both fields
+  await prisma.user.create({ data: { id, name, email, image, googleImage: image } }).catch(() => {})
   return { canonicalId: id, hasUsername: false }
 }
