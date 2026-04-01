@@ -5,7 +5,7 @@ import { getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
 import { getTitle } from "@/types"
 import Image from "next/image"
 import Link from "next/link"
-import { UserPlus, Users, Clock, TrendingUp } from "lucide-react"
+import { UserPlus, Users, Clock, TrendingUp, Trophy } from "lucide-react"
 import { normalizeEloScores } from "@/lib/elo"
 import { getTier } from "@/lib/tiers"
 
@@ -164,20 +164,29 @@ export default async function FriendsPage() {
             </Link>
           </div>
         </div>
-        {/* Find friends CTA — always visible */}
-        <Link
-          href="/people/search"
-          className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-3 min-h-[44px] text-sm font-semibold text-white hover:bg-blue-500 active:scale-95 transition-all duration-150 flex-shrink-0"
-        >
-          <UserPlus className="h-4 w-4" />
-          <span>Find People</span>
-        </Link>
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Link
+            href="/leaderboard"
+            className="flex h-[44px] w-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-amber-400 active:scale-95 transition-all duration-150"
+            aria-label="Leaderboard"
+          >
+            <Trophy className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/people/search"
+            className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-3 min-h-[44px] text-sm font-semibold text-white hover:bg-blue-500 active:scale-95 transition-all duration-150"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>Find People</span>
+          </Link>
+        </div>
       </div>
 
       {/* ── No friends yet ── */}
       {!hasFollows && (
         <div className="flex flex-col items-center gap-5 py-24 text-center">
-          <Users className="h-10 w-10 text-white/10" />
+          <Users className="h-10 w-10 text-white/20" />
           <div>
             <p className="text-lg font-bold text-white">Your circle is quiet.</p>
             <p className="mt-1.5 max-w-xs text-sm text-white/35">
@@ -197,7 +206,7 @@ export default async function FriendsPage() {
       {/* ── Has follows but no activity ── */}
       {hasFollows && activity.length === 0 && (
         <div className="flex flex-col items-center gap-3 py-20 text-center">
-          <Clock className="h-8 w-8 text-white/10" />
+          <Clock className="h-8 w-8 text-white/20" />
           <p className="text-sm text-white/35">Your circle hasn&apos;t ranked anything yet.</p>
         </div>
       )}

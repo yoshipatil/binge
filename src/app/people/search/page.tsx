@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Search, Users, AtSign } from "lucide-react"
+import { ArrowLeft, Search, Users, AtSign, SearchX } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import FollowButton from "@/components/FollowButton"
 
@@ -116,9 +116,14 @@ export default function PeopleSearchPage() {
       )}
 
       {!loading && searched && results.length === 0 && (
-        <div className="flex flex-col items-center gap-2 py-16 text-center">
-          <p className="text-sm font-semibold text-white/50">No one found for &quot;{query}&quot;</p>
-          <p className="text-xs text-white/25">Try a name or @username</p>
+        <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.05] ring-1 ring-white/8">
+            <SearchX className="h-6 w-6 text-white/30" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white/60">No one found for &quot;{query}&quot;</p>
+            <p className="mt-1 text-xs text-white/30">Try a different name or @username</p>
+          </div>
         </div>
       )}
 

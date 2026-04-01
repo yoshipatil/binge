@@ -130,5 +130,8 @@ export async function GET() {
     })
     .filter(Boolean)
 
-  return NextResponse.json({ mostCompared, boldRankers })
+  const currentUserMostCompared = mostCompared.find((e) => e?.isCurrentUser) ?? null
+  const currentUserBoldRankers = boldRankers.find((e) => e?.isCurrentUser) ?? null
+
+  return NextResponse.json({ mostCompared, boldRankers, currentUserMostCompared, currentUserBoldRankers })
 }

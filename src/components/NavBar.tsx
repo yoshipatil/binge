@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Star, Bookmark, Sparkles, Home, LogIn, Search, Users } from "lucide-react"
+import { Star, Bookmark, Sparkles, Home, LogIn, Search, Users, Trophy } from "lucide-react"
 import BingeLogo from "@/components/BingeLogo"
 
 
@@ -15,6 +15,7 @@ const links = [
   { href: "/watchlist", label: "Watchlist", icon: Bookmark },
   { href: "/recommendations", label: "For You", icon: Sparkles },
   { href: "/people", label: "Circle", icon: Users },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/search", label: "Search", icon: Search },
 ]
 
@@ -44,10 +45,10 @@ export default function NavBar() {
                     : "text-white/45 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" />
+                <Icon className="h-4 w-4" />
                 {label}
                 {active && (
-                  <span className="absolute -bottom-[11px] left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full bg-blue-400/60" />
+                  <span className="absolute -bottom-[11px] left-1/2 h-[2px] w-5 -translate-x-1/2 rounded-full bg-blue-400/80" />
                 )}
               </Link>
             )
@@ -86,7 +87,7 @@ export default function NavBar() {
               href="/sign-in"
               className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-sm font-medium text-white/70 transition-all hover:border-white/20 hover:text-white"
             >
-              <LogIn className="h-3.5 w-3.5" />
+              <LogIn className="h-4 w-4" />
               Sign in
             </Link>
           )}

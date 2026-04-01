@@ -44,7 +44,7 @@ function SignInForm() {
           </button>
         </div>
 
-        <p className="text-center text-xs text-white/15">
+        <p className="text-center text-xs text-white/35 tracking-wide">
           Your taste, ranked your way.
         </p>
       </div>
