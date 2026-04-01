@@ -6,6 +6,8 @@ import NavBar from "@/components/NavBar";
 import BottomNav from "@/components/BottomNav";
 import Providers from "@/components/Providers";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import PostHogProvider from "@/components/PostHogProvider";
 import { Toaster } from "react-hot-toast";
 
 const geist = Geist({
@@ -49,20 +51,21 @@ export default async function RootLayout({
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <Providers session={session}>
-          <NavBar />
-          {/* pb-20 on mobile reserves space above the fixed BottomNav; cleared on md+ */}
-          <main className="flex-1">
-            {children}
-          </main>
-          {/* Footer — TMDB attribution required by ToS, visible on all screen sizes */}
-          <footer className="border-t border-white/5 pb-[calc(76px+env(safe-area-inset-bottom))] pt-3 text-center text-[11px] text-white/20 md:pb-4 md:pt-4 md:text-xs md:text-white/25">
-            This product uses the TMDB API but is not endorsed or certified by TMDB.
-            {" · "}
-            <a href="/privacy" className="underline-offset-2 hover:text-white/40 hover:underline">
-              Privacy Policy
-            </a>
-          </footer>
-          <BottomNav />
+          <PostHogProvider>
+            <NavBar />
+            <main className="flex-1">
+              {children}
+            </main>
+            {/* Footer — TMDB attribution required by ToS, visible on all screen sizes */}
+            <footer className="border-t border-white/5 pb-[calc(76px+env(safe-area-inset-bottom))] pt-3 text-center text-[11px] text-white/20 md:pb-4 md:pt-4 md:text-xs md:text-white/25">
+              This product uses the TMDB API but is not endorsed or certified by TMDB.
+              {" · "}
+              <a href="/privacy" className="underline-offset-2 hover:text-white/40 hover:underline">
+                Privacy Policy
+              </a>
+            </footer>
+            <BottomNav />
+          </PostHogProvider>
         </Providers>
         <Toaster
           position="top-center"
@@ -80,6 +83,7 @@ export default async function RootLayout({
           }}
         />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

@@ -89,14 +89,14 @@ export default function MovieCardSheet({
 
       {open && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — z-[60] sits above BottomNav (z-50) */}
           <div
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
 
           {/* Bottom sheet */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl border-t border-white/10 bg-zinc-900 shadow-2xl">
+          <div className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-2xl border-t border-white/10 bg-zinc-900 shadow-2xl">
             {/* Drag handle */}
             <div className="flex justify-center pb-1 pt-3">
               <div className="h-1 w-10 rounded-full bg-white/20" />
@@ -108,8 +108,11 @@ export default function MovieCardSheet({
               <p className="mt-0.5 text-sm text-white/40">{year}</p>
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-col gap-2 px-4 pb-8 pt-3">
+            {/* Actions — safe-area-aware bottom padding */}
+            <div
+              className="flex flex-col gap-2 px-4 pt-3"
+              style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+            >
               <RateMovieDialog
                 movie={movie}
                 mediaType={mediaType}

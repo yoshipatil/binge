@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
@@ -28,8 +29,22 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
       },
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com",
+      },
     ],
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: "binge",
+  project: "binge-app",
+  silent: true,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  // Only upload source maps when SENTRY_AUTH_TOKEN is set (i.e. in CI/Vercel)
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+});

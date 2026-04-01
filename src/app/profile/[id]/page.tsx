@@ -5,14 +5,19 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { normalizeEloScores } from "@/lib/elo"
 import { getTier } from "@/lib/tiers"
-import { getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
+import { getMovieDetails, getTVDetails, getPosterUrl, getMultipleMovies } from "@/lib/tmdb"
 import FollowButton from "@/components/FollowButton"
 import ProfileMenu from "@/components/ProfileMenu"
 import ShareCardButton from "@/components/ShareCardButton"
+import ProfileTabSwitcher from "@/components/ProfileTabSwitcher"
+import TierList from "@/components/TierList"
+import AvatarUpload from "@/components/AvatarUpload"
 import { Star, Zap, AtSign, Pencil } from "lucide-react"
+import type { RatedItem, MediaType } from "@/types"
 
 interface ProfilePageProps {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ tab?: string; type?: string }>
 }
 
 // Fetch title + poster for a single rated item — fails gracefully
@@ -47,8 +52,11 @@ function getCompatibilityLabel(score: number): string {
 
 const RATING_THRESHOLD = 5
 
-export default async function ProfilePage({ params }: ProfilePageProps) {
+export default async function ProfilePage({ params, searchParams }: ProfilePageProps) {
   const { id } = await params
+  const { tab: tabParam, type: typeParam } = await searchParams
+  const activeTab = tabParam === "rankings" ? "rankings" : "overview"
+  const activeType = typeParam === "movie" ? "movie" : typeParam === "tv" ? "tv" : "all"
   const session = await auth()
   const currentUserId = session?.user?.id ?? ""
 
@@ -104,6 +112,45 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const hasAnyRankings = top5Movies.length > 0 || top5TV.length > 0
   const hasNoRatings = totalRatings === 0
 
+  // ── Rankings tab data ────────────────────────────────────────────────
+  let rankingItems: RatedItem[] = []
+  if (activeTab === "rankings") {
+    const filteredRatings = activeType === "movie"
+      ? allRatings.filter((r) => r.mediaType !== "tv")
+      : activeType === "tv"
+      ? allRatings.filter((r) => r.mediaType === "tv")
+      : allRatings
+
+    const grouped: Record<string, typeof filteredRatings> = {}
+    for (const r of filteredRatings) {
+      if (!grouped[r.mediaType]) grouped[r.mediaType] = []
+      grouped[r.mediaType].push(r)
+    }
+    const withScores = Object.values(grouped)
+      .flatMap((group) => normalizeEloScores(group))
+      .sort((a, b) => b.displayScore - a.displayScore)
+
+    const tmdbResults = await getMultipleMovies(
+      withScores.map((r) => ({ tmdbId: r.tmdbId, mediaType: r.mediaType }))
+    )
+
+    rankingItems = withScores
+      .map((r, i) => ({
+        rating: {
+          id: r.id,
+          tmdbId: r.tmdbId,
+          mediaType: r.mediaType as MediaType,
+          seedScore: r.seedScore,
+          eloScore: r.eloScore,
+          displayScore: isNaN(r.displayScore) ? 5 : (r.displayScore ?? 5),
+          review: r.review ?? null,
+          watchedAt: r.watchedAt instanceof Date ? r.watchedAt.toISOString() : String(r.watchedAt),
+        },
+        movie: tmdbResults[i],
+      }))
+      .filter((item): item is RatedItem => item.movie != null)
+  }
+
   // ── Taste Compatibility ──────────────────────────────────────────────
   // Only computed when viewing another user's profile while signed in
   let compatibility: number | null = null
@@ -147,24 +194,28 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     <div className="mx-auto max-w-2xl px-4 py-8 pb-24 md:pb-8">
       {/* ── Profile Header ── */}
       <div className="flex items-start gap-4">
-        {/* Avatar */}
-        <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-white/10">
-          {profileUser.image ? (
-            <Image
-              src={profileUser.image}
-              alt={profileUser.name ?? "User"}
-              fill
-              sizes="80px"
-              className="object-cover"
-            />
-          ) : (
-            <div className="h-full w-full bg-blue-500/20 flex items-center justify-center">
-              <span className="text-2xl font-black text-blue-400">
-                {profileUser.name?.[0]?.toUpperCase() ?? "?"}
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Avatar — tappable on own profile */}
+        {isOwnProfile ? (
+          <AvatarUpload currentImage={profileUser.image} name={profileUser.name} />
+        ) : (
+          <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-white/10">
+            {profileUser.image ? (
+              <Image
+                src={profileUser.image}
+                alt={profileUser.name ?? "User"}
+                fill
+                sizes="80px"
+                className="object-cover"
+              />
+            ) : (
+              <div className="h-full w-full bg-blue-500/20 flex items-center justify-center">
+                <span className="text-2xl font-black text-blue-400">
+                  {profileUser.name?.[0]?.toUpperCase() ?? "?"}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Name + username + bio */}
         <div className="flex-1 min-w-0">
@@ -288,72 +339,80 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
       )}
 
-      <div className="my-6 h-px bg-white/8" />
-
-      {/* ── Empty state ── */}
-      {hasNoRatings && (
-        <div className="flex flex-col items-center gap-2 py-16 text-center">
-          <Star className="h-8 w-8 text-white/15" />
-          <p className="text-sm text-white/40">No rankings yet</p>
-        </div>
-      )}
-
-      {/* ── Rankings ── */}
-      <div className="flex flex-col gap-8">
-        {/* Top Movies */}
-        {showMovieRankings && top5Movies.length > 0 ? (
-          <RankingSection
-            title="Top Movies"
-            items={top5Movies.map((r, i) => ({
-              rank: i + 1,
-              tmdbId: r.tmdbId,
-              mediaType: r.mediaType,
-              displayScore: r.displayScore,
-              title: movieData[i].title,
-              poster: movieData[i].poster,
-            }))}
-          />
-        ) : movieRatings.length > 0 && movieRatings.length < RATING_THRESHOLD ? (
-          <ThresholdNudge
-            type="movies"
-            ratedCount={movieRatings.length}
-            needed={RATING_THRESHOLD}
-            isOwnProfile={isOwnProfile}
-          />
-        ) : null}
-
-        {/* Top TV Shows */}
-        {showTVRankings && top5TV.length > 0 ? (
-          <RankingSection
-            title="Top TV Shows"
-            items={top5TV.map((r, i) => ({
-              rank: i + 1,
-              tmdbId: r.tmdbId,
-              mediaType: "tv" as const,
-              displayScore: r.displayScore,
-              title: tvData[i].title,
-              poster: tvData[i].poster,
-            }))}
-          />
-        ) : tvRatings.length > 0 && tvRatings.length < RATING_THRESHOLD ? (
-          <ThresholdNudge
-            type="TV shows"
-            ratedCount={tvRatings.length}
-            needed={RATING_THRESHOLD}
-            isOwnProfile={isOwnProfile}
-          />
-        ) : null}
+      {/* ── Tab Switcher ── */}
+      <div className="my-6">
+        <ProfileTabSwitcher profileId={id} totalRatings={totalRatings} />
       </div>
 
-      {/* ── Share Card ── only show if user has rankings */}
-      {hasAnyRankings && (
-        <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-5 text-center">
-          <p className="text-sm font-semibold text-white/70">Share your Top 5</p>
-          <p className="text-xs text-white/35 max-w-xs">
-            Generate a beautiful card of your movie &amp; TV rankings — save it or share to Instagram Stories, iMessage, or anywhere.
-          </p>
-          <ShareCardButton userId={id} />
-        </div>
+      {/* ── Overview tab ── */}
+      {activeTab === "overview" && (
+        <>
+          {hasNoRatings && (
+            <div className="flex flex-col items-center gap-2 py-16 text-center">
+              <Star className="h-8 w-8 text-white/15" />
+              <p className="text-sm text-white/40">No rankings yet</p>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-8">
+            {showMovieRankings && top5Movies.length > 0 ? (
+              <RankingSection
+                title="Top Movies"
+                items={top5Movies.map((r, i) => ({
+                  rank: i + 1,
+                  tmdbId: r.tmdbId,
+                  mediaType: r.mediaType,
+                  displayScore: r.displayScore,
+                  title: movieData[i].title,
+                  poster: movieData[i].poster,
+                }))}
+              />
+            ) : movieRatings.length > 0 && movieRatings.length < RATING_THRESHOLD ? (
+              <ThresholdNudge
+                type="movies"
+                ratedCount={movieRatings.length}
+                needed={RATING_THRESHOLD}
+                isOwnProfile={isOwnProfile}
+              />
+            ) : null}
+
+            {showTVRankings && top5TV.length > 0 ? (
+              <RankingSection
+                title="Top TV Shows"
+                items={top5TV.map((r, i) => ({
+                  rank: i + 1,
+                  tmdbId: r.tmdbId,
+                  mediaType: "tv" as const,
+                  displayScore: r.displayScore,
+                  title: tvData[i].title,
+                  poster: tvData[i].poster,
+                }))}
+              />
+            ) : tvRatings.length > 0 && tvRatings.length < RATING_THRESHOLD ? (
+              <ThresholdNudge
+                type="TV shows"
+                ratedCount={tvRatings.length}
+                needed={RATING_THRESHOLD}
+                isOwnProfile={isOwnProfile}
+              />
+            ) : null}
+          </div>
+
+          {isOwnProfile && hasAnyRankings && (
+            <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-5 text-center">
+              <p className="text-sm font-semibold text-white/70">Share your Top 5</p>
+              <p className="text-xs text-white/35 max-w-xs">
+                Generate a beautiful card of your rankings — share to Instagram Stories, iMessage, or anywhere.
+              </p>
+              <ShareCardButton userId={id} />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Rankings tab ── */}
+      {activeTab === "rankings" && (
+        <TierList items={rankingItems} />
       )}
     </div>
   )

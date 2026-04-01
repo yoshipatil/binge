@@ -84,8 +84,8 @@ test.describe("Desktop homepage", () => {
     const homeLink = page.locator('nav a[href="/"]')
     await expect(homeLink.first()).toBeVisible()
 
-    const rankingsLink = page.locator('nav a[href="/rankings"]')
-    await expect(rankingsLink.first()).toBeVisible()
+    const leaderboardLink = page.locator('nav a[href="/leaderboard"]')
+    await expect(leaderboardLink.first()).toBeVisible()
 
     const searchLink = page.locator('nav a[href="/search"]')
     await expect(searchLink.first()).toBeVisible()

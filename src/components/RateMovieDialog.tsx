@@ -15,8 +15,9 @@ import { getPosterUrl } from "@/lib/tmdb"
 import { TIERS } from "@/lib/tiers"
 import { getTitle, type TMDBMovie, type MediaType } from "@/types"
 import {
-  Loader2, Trophy, Heart, Star, ThumbsUp, Minus, ThumbsDown, CheckCircle2,
+  Loader2, Trophy, Heart, Star, ThumbsUp, Minus, ThumbsDown, CheckCircle2, Sparkles,
 } from "lucide-react"
+import Link from "next/link"
 import toast from "react-hot-toast"
 
 const ease = [0.16, 1, 0.3, 1] as const
@@ -45,7 +46,7 @@ interface RateMovieDialogProps {
   trigger: React.ReactNode
 }
 
-type Step = "tier" | "compare" | "done"
+type Step = "tier" | "compare" | "done" | "reveal"
 
 export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovieDialogProps) {
   const router = useRouter()
@@ -56,6 +57,7 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
   const [saving, setSaving] = useState(false)
   const [activeTier, setActiveTier] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [revealCount, setRevealCount] = useState(0)
 
   function handleOpen() {
     setOpen(true)
@@ -127,6 +129,20 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
     }
 
     if (currentIndex + 1 >= candidates.length) {
+      // Check if we've hit a milestone (every 25 comparisons)
+      try {
+        const countRes = await fetch("/api/compare/count")
+        if (countRes.ok) {
+          const { total } = await countRes.json()
+          if (total > 0 && total % 25 === 0) {
+            setRevealCount(total)
+            setStep("reveal")
+            return
+          }
+        }
+      } catch {
+        // Non-critical — fall through to normal done state
+      }
       setStep("done")
       toast.success(`Ranked: ${getTitle(movie)}`)
       setTimeout(() => { setOpen(false); router.refresh() }, 800)
@@ -316,6 +332,77 @@ export default function RateMovieDialog({ movie, mediaType, trigger }: RateMovie
                 >
                   {getTitle(movie)}
                 </motion.p>
+              </motion.div>
+            )}
+
+            {/* ── Ranking Reveal ── milestone every 25 comparisons */}
+            {step === "reveal" && (
+              <motion.div
+                key="reveal"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3, ease }}
+                className="flex flex-col items-center gap-5 px-6 py-10 text-center"
+              >
+                {/* Burst icon */}
+                <motion.div
+                  initial={{ scale: 0, rotate: -20 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ delay: 0.05, type: "spring", stiffness: 240, damping: 18 }}
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600"
+                >
+                  <Sparkles className="h-8 w-8 text-white" />
+                </motion.div>
+
+                {/* Count */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.25, ease }}
+                >
+                  <p className="text-4xl font-black tabular-nums text-white">{revealCount}</p>
+                  <p className="mt-0.5 text-sm font-medium text-white/40 uppercase tracking-widest">Comparisons</p>
+                </motion.div>
+
+                {/* Message */}
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.25, ease }}
+                  className="flex flex-col gap-1"
+                >
+                  <p className="text-lg font-bold text-white">Your ranking is sharper than ever.</p>
+                  <p className="text-sm text-white/40 max-w-[240px]">
+                    Every battle refines your taste. See how your list has evolved.
+                  </p>
+                </motion.div>
+
+                {/* CTA */}
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.42, duration: 0.25, ease }}
+                  className="flex flex-col gap-2 w-full"
+                >
+                  <Link
+                    href="/profile/me?tab=rankings"
+                    onClick={() => { setOpen(false); router.refresh() }}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
+                  >
+                    See your rankings
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setStep("done")
+                      toast.success(`Ranked: ${getTitle(movie)}`)
+                      setTimeout(() => { setOpen(false); router.refresh() }, 600)
+                    }}
+                    className="text-sm text-white/35 hover:text-white/60 transition-colors py-2"
+                  >
+                    Continue rating
+                  </button>
+                </motion.div>
               </motion.div>
             )}
 

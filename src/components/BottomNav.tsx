@@ -4,13 +4,12 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Home, Star, Search, Sparkles, Users, LogIn } from "lucide-react"
+import { Home, Search, Sparkles, Users, LogIn } from "lucide-react"
 
 
 
 const links = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/rankings", label: "Rankings", icon: Star },
   { href: "/search", label: "Search", icon: Search },
   { href: "/recommendations", label: "For You", icon: Sparkles },
   { href: "/people", label: "Circle", icon: Users },
@@ -22,12 +21,10 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-white/[0.07] bg-black"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
-
-      <div className="flex items-center justify-around bg-black/90 px-2 backdrop-blur-xl">
+      <div className="flex items-center justify-around px-2">
         {links.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/")
           return (

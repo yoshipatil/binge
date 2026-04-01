@@ -4,14 +4,13 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Star, Bookmark, Sparkles, Home, LogIn, Search, Users, Trophy } from "lucide-react"
+import { Bookmark, Sparkles, Home, LogIn, Search, Users, Trophy } from "lucide-react"
 import BingeLogo from "@/components/BingeLogo"
 
 
 
 const links = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/rankings", label: "Rankings", icon: Star },
   { href: "/watchlist", label: "Watchlist", icon: Bookmark },
   { href: "/recommendations", label: "For You", icon: Sparkles },
   { href: "/people", label: "Circle", icon: Users },
