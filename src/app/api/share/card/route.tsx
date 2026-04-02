@@ -421,9 +421,8 @@ export async function GET(request: NextRequest) {
                     lineHeight: 1.25,
                     letterSpacing: "-0.2px",
                     overflow: "hidden",
-                    display: "-webkit-box",
-                    WebkitLineClamp: "2",
-                    WebkitBoxOrient: "vertical",
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
                   }}
                 >
                   {item.title}
