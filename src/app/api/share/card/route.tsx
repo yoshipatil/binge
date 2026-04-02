@@ -99,9 +99,17 @@ export async function GET(request: NextRequest) {
     return new Response("No ratings yet", { status: 400 })
   }
 
-  // Combined top-5: both movies + TV are normalized 0–10 so scores are comparable
-  const normalized = normalizeEloScores(allRatings)
-  const top5 = normalized
+  // Normalize movies and TV separately — ELO scores are only comparable within
+  // their own pool. Mixing them before normalizing produces wrong display scores
+  // because the two pools have independent ELO ranges.
+  // This matches the same algorithm used everywhere else in the app (profile page, etc.)
+  const movieRatings = allRatings.filter((r) => r.mediaType !== "tv")
+  const tvRatings = allRatings.filter((r) => r.mediaType === "tv")
+  const normalizedMovies = normalizeEloScores(movieRatings)
+  const normalizedTV = normalizeEloScores(tvRatings)
+  const allNormalized = [...normalizedMovies, ...normalizedTV]
+
+  const top5 = allNormalized
     .sort((a, b) => b.displayScore - a.displayScore)
     .slice(0, 5)
 

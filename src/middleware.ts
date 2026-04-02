@@ -5,7 +5,7 @@ import { NextResponse } from "next/server"
 const { auth } = NextAuth(authConfig)
 
 // Pages that require a signed-in user
-const PROTECTED = ["/rankings", "/watchlist", "/recommendations", "/people", "/profile"]
+const PROTECTED = ["/rankings", "/watchlist", "/recommendations", "/people", "/profile", "/watch-together"]
 
 // Pages that should never trigger the profile-setup redirect
 const SETUP_EXEMPT = ["/profile/setup", "/sign-in", "/api", "/_next", "/favicon", "/icon", "/manifest"]

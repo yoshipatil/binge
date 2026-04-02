@@ -108,3 +108,22 @@ test.describe("Mobile /profile/setup (protected)", () => {
     expect(page.url()).toContain("/sign-in")
   })
 })
+
+// ─── 6. Watch Together: unauthenticated redirect (mobile + desktop) ───────────
+test.describe("Watch Together route", () => {
+  test.use({ baseURL: "http://localhost:3000" })
+
+  test("/watch-together redirects unauthenticated to sign-in (mobile 390px)", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto("/watch-together")
+    await page.waitForLoadState("networkidle")
+    expect(page.url()).toContain("/sign-in")
+  })
+
+  test("/watch-together redirects unauthenticated to sign-in (desktop 1280px)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto("/watch-together")
+    await page.waitForLoadState("networkidle")
+    expect(page.url()).toContain("/sign-in")
+  })
+})

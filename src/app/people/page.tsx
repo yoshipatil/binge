@@ -5,7 +5,7 @@ import { getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
 import { getTitle } from "@/types"
 import Image from "next/image"
 import Link from "next/link"
-import { UserPlus, Users, Clock, TrendingUp, Trophy, UserCheck } from "lucide-react"
+import { UserPlus, Users, Clock, TrendingUp, Trophy, UserCheck, Popcorn } from "lucide-react"
 import FollowButton from "@/components/FollowButton"
 import { normalizeEloScores } from "@/lib/elo"
 import { getTier } from "@/lib/tiers"
@@ -228,6 +228,32 @@ export default async function FriendsPage() {
           </Link>
         </div>
       </div>
+
+      {/* ── Watch Together card (only when following people) ── */}
+      {hasFollows && (
+        <Link
+          href="/watch-together"
+          className="mb-6 flex items-center gap-4 rounded-2xl border border-blue-500/20 bg-blue-600/8 px-5 py-4 hover:bg-blue-600/12 active:scale-[0.99] transition-all duration-150 group"
+        >
+          {/* Left: avatars */}
+          <div className="flex-shrink-0 flex items-center justify-center h-11 w-11 rounded-xl bg-blue-600/20">
+            <Popcorn className="h-5 w-5 text-blue-400" />
+          </div>
+
+          {/* Text */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-black text-white group-hover:text-blue-100 transition-colors">Watch Together</p>
+            <p className="mt-0.5 text-xs text-white/40">
+              Pick friends and find what you&apos;d all love
+            </p>
+          </div>
+
+          {/* Chevron */}
+          <svg className="h-4 w-4 flex-shrink-0 text-white/25 group-hover:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      )}
 
       {/* ── No friends yet ── */}
       {!hasFollows && (

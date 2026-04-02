@@ -12,7 +12,7 @@ import ShareCardPreview from "@/components/ShareCardPreview"
 import ProfileTabSwitcher from "@/components/ProfileTabSwitcher"
 import TierList from "@/components/TierList"
 import AvatarUpload from "@/components/AvatarUpload"
-import { Star, Zap, AtSign, Pencil } from "lucide-react"
+import { Star, Zap, AtSign, Pencil, Popcorn } from "lucide-react"
 import type { RatedItem, MediaType } from "@/types"
 
 interface ProfilePageProps {
@@ -249,7 +249,17 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
               <ProfileMenu />
             </>
           ) : currentUserId ? (
-            <FollowButton targetId={id} initialIsFollowing={isFollowing} />
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/watch-together?friendIds=${id}`}
+                className="flex h-[44px] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-semibold text-white/60 hover:bg-white/10 hover:text-white active:scale-95 transition-all duration-150"
+                aria-label="Watch Together"
+              >
+                <Popcorn className="h-4 w-4" />
+                <span className="hidden sm:inline">Watch Together</span>
+              </Link>
+              <FollowButton targetId={id} initialIsFollowing={isFollowing} />
+            </div>
           ) : (
             <a
               href="/sign-in"
