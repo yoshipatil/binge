@@ -15,6 +15,7 @@ import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
 import { checkRateLimit, getClientIp, rateLimitedResponse } from "@/lib/rateLimit"
 
 export const runtime = "nodejs"
+export const maxDuration = 30
 
 const TMDB_IMG = "https://image.tmdb.org/t/p"
 
@@ -56,15 +57,6 @@ async function toDataUrl(url: string): Promise<string | null> {
   }
 }
 
-async function getFont(url: string): Promise<ArrayBuffer | null> {
-  try {
-    const res = await fetch(url)
-    if (!res.ok) return null
-    return res.arrayBuffer()
-  } catch {
-    return null
-  }
-}
 
 // ── Route handler ──────────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
@@ -131,12 +123,10 @@ export async function GET(request: NextRequest) {
     mediaType: r.mediaType,
   }))
 
-  const [avatarDataUrl, fontRegular, fontBold, fontBlack] = await Promise.all([
-    user.image ? toDataUrl(user.image) : Promise.resolve(null),
-    getFont("https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff"),
-    getFont("https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI4d_CVqgPqhQ.woff"),
-    getFont("https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuBGchYZ.woff"),
-  ])
+  // Load avatar; skip custom fonts — remote WOFF/WOFF2 URLs crash satori (TTF-only).
+  // @vercel/og bundles Geist-Regular.ttf as its default and uses it automatically
+  // when no `fonts` option is supplied.
+  const avatarDataUrl = await (user.image ? toDataUrl(user.image) : Promise.resolve(null))
 
   const isStories = cardType === "stories"
   const W = isStories ? 1080 : 600
@@ -163,12 +153,7 @@ export async function GET(request: NextRequest) {
     return "rgba(255,255,255,0.25)"
   }
 
-  type FontConfig = { name: string; data: ArrayBuffer; weight: 400 | 700 | 900; style: "normal" }
-  const fonts: FontConfig[] = []
-  if (fontRegular) fonts.push({ name: "Inter", data: fontRegular, weight: 400, style: "normal" })
-  if (fontBold)    fonts.push({ name: "Inter", data: fontBold,    weight: 700, style: "normal" })
-  if (fontBlack)   fonts.push({ name: "Inter", data: fontBlack,   weight: 900, style: "normal" })
-
+  try {
   return new ImageResponse(
     (
       <div
@@ -179,7 +164,7 @@ export async function GET(request: NextRequest) {
           display: "flex",
           flexDirection: "column",
           padding: PAD,
-          fontFamily: fonts.length > 0 ? "Inter" : "sans-serif",
+          fontFamily: "sans-serif",
           position: "relative",
           overflow: "hidden",
         }}
@@ -496,11 +481,17 @@ export async function GET(request: NextRequest) {
     {
       width: W,
       height: H,
-      fonts: fonts.length > 0 ? fonts : undefined,
       headers: {
         "Cache-Control": "public, max-age=600, stale-while-revalidate=300",
         "Content-Disposition": `inline; filename="binge-top5.png"`,
       },
     }
   )
+  } catch (err) {
+    console.error("[share/card] ImageResponse render failed:", err)
+    return new Response(
+      JSON.stringify({ error: "render_failed", message: String(err) }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    )
+  }
 }
