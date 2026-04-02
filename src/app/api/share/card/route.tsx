@@ -1,10 +1,10 @@
 // GET /api/share/card?userId=<id>&type=<stories|preview>
-// Returns a PNG image of the user's Top 5 ranked movies + TV shows.
-// type=stories → 1080×1920 (Instagram Stories)
-// type=preview → 600×600 (iMessage / Twitter square)
+// Returns a cinematic PNG of the user's Top 5 ranked titles.
+// type=stories  → 1080×1920 (Instagram Stories / Reels)
+// type=preview  → 600×600  (iMessage, Twitter, WhatsApp)
 //
-// Uses @vercel/og (ImageResponse) which bundles satori + WASM resvg internally —
-// no native binaries needed, works on Vercel Node.js runtime.
+// Uses @vercel/og (satori + WASM resvg) — no native binaries needed.
+// IMPORTANT: No emojis in JSX — satori has no emoji font loaded.
 
 import { type NextRequest } from "next/server"
 import { ImageResponse } from "@vercel/og"
@@ -24,6 +24,7 @@ interface RankedItem {
   year: string
   posterDataUrl: string | null
   score: number
+  mediaType: string
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -31,7 +32,7 @@ async function fetchItemDetails(tmdbId: number, mediaType: string) {
   try {
     const d = mediaType === "tv" ? await getTVDetails(tmdbId) : await getMovieDetails(tmdbId)
     const raw = d as unknown as Record<string, unknown>
-    const title = ((raw.title ?? raw.name ?? String(tmdbId)) as string).slice(0, 40)
+    const title = ((raw.title ?? raw.name ?? String(tmdbId)) as string).slice(0, 36)
     const dateStr = (raw.release_date ?? raw.first_air_date ?? "") as string
     const year = dateStr ? dateStr.slice(0, 4) : ""
     const poster = (raw.poster_path as string | null) ?? null
@@ -43,7 +44,7 @@ async function fetchItemDetails(tmdbId: number, mediaType: string) {
 
 async function toDataUrl(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } })
+    const res = await fetch(url)
     if (!res.ok) return null
     const buf = await res.arrayBuffer()
     const b64 = Buffer.from(buf).toString("base64")
@@ -54,9 +55,14 @@ async function toDataUrl(url: string): Promise<string | null> {
   }
 }
 
-async function getFont(url: string): Promise<ArrayBuffer> {
-  const res = await fetch(url, { next: { revalidate: 86400 } })
-  return res.arrayBuffer()
+async function getFont(url: string): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    return res.arrayBuffer()
+  } catch {
+    return null
+  }
 }
 
 // ── Route handler ──────────────────────────────────────────────────────────────
@@ -76,118 +82,189 @@ export async function GET(request: NextRequest) {
   if (!user) return new Response("Not found", { status: 404 })
 
   const allRatings = await prisma.rating.findMany({ where: { userId } })
+  if (allRatings.length === 0) {
+    return new Response("No ratings yet", { status: 400 })
+  }
 
-  const movieRatings = normalizeEloScores(allRatings.filter((r) => r.mediaType !== "tv"))
+  // Combined top-5: both movies + TV are normalized 0–10 so scores are comparable
+  const normalized = normalizeEloScores(allRatings)
+  const top5 = normalized
     .sort((a, b) => b.displayScore - a.displayScore)
     .slice(0, 5)
 
-  const tvRatings = normalizeEloScores(allRatings.filter((r) => r.mediaType === "tv"))
-    .sort((a, b) => b.displayScore - a.displayScore)
-    .slice(0, 5)
+  const top5Details = await Promise.all(
+    top5.map((r) => fetchItemDetails(r.tmdbId, r.mediaType))
+  )
+  const top5Posters = await Promise.all(
+    top5Details.map((d) =>
+      d.poster ? toDataUrl(`${TMDB_IMG}/w342${d.poster}`) : Promise.resolve(null)
+    )
+  )
 
-  const [movieDetails, tvDetails] = await Promise.all([
-    Promise.all(movieRatings.map((r) => fetchItemDetails(r.tmdbId, r.mediaType))),
-    Promise.all(tvRatings.map((r) => fetchItemDetails(r.tmdbId, "tv"))),
-  ])
+  const items: RankedItem[] = top5.map((r, i) => ({
+    rank: i + 1,
+    title: top5Details[i].title,
+    year: top5Details[i].year,
+    posterDataUrl: top5Posters[i],
+    score: Math.round(r.displayScore * 10) / 10,
+    mediaType: r.mediaType,
+  }))
 
-  const [moviePosters, tvPosters, avatarDataUrl, fontRegular, fontBold] = await Promise.all([
-    Promise.all(movieDetails.map((d) => d.poster ? toDataUrl(`${TMDB_IMG}/w342${d.poster}`) : Promise.resolve(null))),
-    Promise.all(tvDetails.map((d) => d.poster ? toDataUrl(`${TMDB_IMG}/w342${d.poster}`) : Promise.resolve(null))),
+  const [avatarDataUrl, fontRegular, fontBold, fontBlack] = await Promise.all([
     user.image ? toDataUrl(user.image) : Promise.resolve(null),
     getFont("https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff"),
     getFont("https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI4d_CVqgPqhQ.woff"),
+    getFont("https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuBGchYZ.woff"),
   ])
 
-  const movies: RankedItem[] = movieRatings.map((r, i) => ({
-    rank: i + 1,
-    title: movieDetails[i].title,
-    year: movieDetails[i].year,
-    posterDataUrl: moviePosters[i],
-    score: Math.round(r.displayScore),
-  }))
-
-  const tv: RankedItem[] = tvRatings.map((r, i) => ({
-    rank: i + 1,
-    title: tvDetails[i].title,
-    year: tvDetails[i].year,
-    posterDataUrl: tvPosters[i],
-    score: Math.round(r.displayScore),
-  }))
-
   const isStories = cardType === "stories"
-  const width = isStories ? 1080 : 600
-  const height = isStories ? 1920 : 600
-  const pad = isStories ? 72 : 40
-  const posterW = isStories ? 96 : 52
-  const posterH = isStories ? 144 : 78
+  const W = isStories ? 1080 : 600
+  const H = isStories ? 1920 : 600
+  const PAD = isStories ? 72 : 40
 
-  const userName = user.name ?? "Binge User"
+  const userName = (user.name ?? "Binge User").split(" ").slice(0, 2).join(" ")
   const handle = user.username ? `@${user.username}` : ""
+
+  // Scale factor: stories is ~1.8× preview
+  const S = isStories ? 1.8 : 1
+  const posterW = Math.round(44 * S)
+  const posterH = Math.round(66 * S)
+  const rowH = Math.round(80 * S)
+  const rankSize = Math.round(13 * S)
+  const titleSize = Math.round(14 * S)
+  const yearSize = Math.round(11 * S)
+
+  // Amber for #1 (achievement feel), fading white for rest
+  const rankColor = (rank: number) => {
+    if (rank === 1) return "#F59E0B"
+    if (rank === 2) return "rgba(255,255,255,0.55)"
+    if (rank === 3) return "rgba(255,255,255,0.40)"
+    return "rgba(255,255,255,0.25)"
+  }
+
+  type FontConfig = { name: string; data: ArrayBuffer; weight: 400 | 700 | 900; style: "normal" }
+  const fonts: FontConfig[] = []
+  if (fontRegular) fonts.push({ name: "Inter", data: fontRegular, weight: 400, style: "normal" })
+  if (fontBold)    fonts.push({ name: "Inter", data: fontBold,    weight: 700, style: "normal" })
+  if (fontBlack)   fonts.push({ name: "Inter", data: fontBlack,   weight: 900, style: "normal" })
 
   return new ImageResponse(
     (
       <div
         style={{
-          width,
-          height,
-          background: "#000000",
+          width: W,
+          height: H,
+          background: "linear-gradient(160deg, #000000 0%, #060C1A 100%)",
           display: "flex",
           flexDirection: "column",
-          padding: pad,
-          fontFamily: "Inter",
+          padding: PAD,
+          fontFamily: fonts.length > 0 ? "Inter" : "sans-serif",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        {/* ── Header ── */}
-        <div style={{ display: "flex", alignItems: "center", marginBottom: isStories ? 56 : 28 }}>
-          {/* Avatar */}
+        {/* Ambient blue glow — bottom left */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: isStories ? -200 : -120,
+            left: isStories ? -100 : -60,
+            width: isStories ? 700 : 380,
+            height: isStories ? 700 : 380,
+            background: "radial-gradient(circle, rgba(37,99,235,0.18) 0%, rgba(37,99,235,0) 70%)",
+            borderRadius: "50%",
+          }}
+        />
+        {/* Amber glow — top right, anchors the #1 feeling */}
+        <div
+          style={{
+            position: "absolute",
+            top: isStories ? -80 : -50,
+            right: isStories ? -80 : -50,
+            width: isStories ? 400 : 220,
+            height: isStories ? 400 : 220,
+            background: "radial-gradient(circle, rgba(245,158,11,0.10) 0%, rgba(245,158,11,0) 70%)",
+            borderRadius: "50%",
+          }}
+        />
+
+        {/* ── Header: avatar + name + Binge logo ── */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: isStories ? 52 : 28,
+          }}
+        >
           {avatarDataUrl ? (
             <img
               src={avatarDataUrl}
-              width={isStories ? 80 : 44}
-              height={isStories ? 80 : 44}
+              width={isStories ? 72 : 40}
+              height={isStories ? 72 : 40}
               style={{
                 borderRadius: "50%",
                 objectFit: "cover",
-                border: "2px solid rgba(37,99,235,0.5)",
+                border: `${isStories ? 2.5 : 1.5}px solid rgba(37,99,235,0.5)`,
               }}
             />
           ) : (
             <div
               style={{
-                width: isStories ? 80 : 44,
-                height: isStories ? 80 : 44,
+                width: isStories ? 72 : 40,
+                height: isStories ? 72 : 40,
                 borderRadius: "50%",
-                background: "#1d2d4f",
+                background: "rgba(37,99,235,0.2)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                border: "2px solid rgba(37,99,235,0.3)",
+                border: `2px solid rgba(37,99,235,0.3)`,
               }}
             >
-              <span style={{ color: "#60a5fa", fontSize: isStories ? 36 : 20, fontWeight: 700 }}>
+              <span style={{ color: "#60a5fa", fontSize: isStories ? 32 : 18, fontWeight: 700 }}>
                 {userName.charAt(0).toUpperCase()}
               </span>
             </div>
           )}
 
-          {/* Name + handle */}
-          <div style={{ display: "flex", flexDirection: "column", marginLeft: isStories ? 24 : 14 }}>
-            <span style={{ color: "#fff", fontSize: isStories ? 32 : 18, fontWeight: 700, lineHeight: 1.2 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              marginLeft: isStories ? 20 : 12,
+              gap: 2,
+            }}
+          >
+            <span
+              style={{
+                color: "#ffffff",
+                fontSize: isStories ? 30 : 16,
+                fontWeight: 700,
+                letterSpacing: "-0.3px",
+                lineHeight: 1.2,
+              }}
+            >
               {userName}
             </span>
             {handle ? (
-              <span style={{ color: "rgba(255,255,255,0.4)", fontSize: isStories ? 22 : 13, marginTop: 2 }}>
+              <span style={{ color: "rgba(255,255,255,0.32)", fontSize: isStories ? 20 : 11 }}>
                 {handle}
               </span>
             ) : null}
           </div>
 
-          {/* Binge logo (right) */}
-          <div style={{ display: "flex", alignItems: "center", marginLeft: "auto", gap: 8 }}>
+          {/* Binge wordmark — right */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginLeft: "auto",
+              gap: isStories ? 10 : 6,
+            }}
+          >
             <div
               style={{
-                width: isStories ? 36 : 22,
-                height: isStories ? 36 : 22,
+                width: isStories ? 34 : 20,
+                height: isStories ? 34 : 20,
                 background: "#2563EB",
                 borderRadius: isStories ? 8 : 5,
                 display: "flex",
@@ -195,134 +272,215 @@ export async function GET(request: NextRequest) {
                 justifyContent: "center",
               }}
             >
-              <span style={{ color: "#fff", fontSize: isStories ? 18 : 11, fontWeight: 800 }}>B</span>
+              <span style={{ color: "#fff", fontSize: isStories ? 18 : 11, fontWeight: 900, lineHeight: 1 }}>
+                B
+              </span>
             </div>
-            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: isStories ? 24 : 14, fontWeight: 700 }}>
+            <span
+              style={{
+                color: "rgba(255,255,255,0.45)",
+                fontSize: isStories ? 22 : 13,
+                fontWeight: 700,
+                letterSpacing: "-0.3px",
+              }}
+            >
               Binge
             </span>
           </div>
         </div>
 
-        {/* ── Section title ── */}
-        <div style={{ display: "flex", alignItems: "center", marginBottom: isStories ? 36 : 20, gap: 12 }}>
-          <div style={{ width: isStories ? 4 : 3, height: isStories ? 32 : 18, background: "#2563EB", borderRadius: 2 }} />
-          <span style={{ color: "#fff", fontSize: isStories ? 36 : 20, fontWeight: 800, letterSpacing: "-0.5px" }}>
-            My All-Time Top 5
+        {/* ── Section heading ── */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: isStories ? 14 : 8,
+            marginBottom: isStories ? 28 : 16,
+          }}
+        >
+          <div
+            style={{
+              width: isStories ? 4 : 2.5,
+              height: isStories ? 30 : 17,
+              background: "#2563EB",
+              borderRadius: 2,
+            }}
+          />
+          <span
+            style={{
+              color: "rgba(255,255,255,0.90)",
+              fontSize: isStories ? 34 : 19,
+              fontWeight: 900,
+              letterSpacing: "-0.5px",
+            }}
+          >
+            All-Time Top 5
           </span>
         </div>
 
-        {/* ── Movies ── */}
-        {movies.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: isStories ? 10 : 6, marginBottom: isStories ? 32 : 16 }}>
-            <span style={{ color: "rgba(255,255,255,0.3)", fontSize: isStories ? 18 : 10, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: isStories ? 6 : 3 }}>
-              🎬 Movies
-            </span>
-            {movies.map((item) => (
-              <RankRow key={item.rank} item={item} isStories={isStories} posterW={posterW} posterH={posterH} />
-            ))}
-          </div>
-        )}
+        {/* ── Ranked list ── */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: isStories ? 14 : 8,
+            flex: 1,
+          }}
+        >
+          {items.map((item) => (
+            <div
+              key={item.rank}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: isStories ? 18 : 10,
+                background: item.rank === 1
+                  ? "rgba(245,158,11,0.06)"
+                  : "rgba(255,255,255,0.03)",
+                borderRadius: isStories ? 16 : 10,
+                padding: isStories ? "14px 18px" : "8px 10px",
+                border: item.rank === 1
+                  ? "1px solid rgba(245,158,11,0.16)"
+                  : "1px solid rgba(255,255,255,0.06)",
+                height: rowH,
+                boxSizing: "border-box",
+              }}
+            >
+              {/* Rank number — amber + large for #1 */}
+              <span
+                style={{
+                  color: rankColor(item.rank),
+                  fontSize: item.rank === 1 ? Math.round(rankSize * 1.5) : rankSize,
+                  fontWeight: 900,
+                  width: isStories ? 50 : 28,
+                  textAlign: "center",
+                  lineHeight: 1,
+                  letterSpacing: "-0.5px",
+                  flexShrink: 0,
+                }}
+              >
+                {item.rank}
+              </span>
 
-        {/* ── TV ── */}
-        {tv.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: isStories ? 10 : 6 }}>
-            <span style={{ color: "rgba(255,255,255,0.3)", fontSize: isStories ? 18 : 10, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: isStories ? 6 : 3 }}>
-              📺 TV Shows
-            </span>
-            {tv.map((item) => (
-              <RankRow key={item.rank} item={item} isStories={isStories} posterW={posterW} posterH={posterH} />
-            ))}
-          </div>
-        )}
+              {/* Poster thumbnail */}
+              {item.posterDataUrl ? (
+                <img
+                  src={item.posterDataUrl}
+                  width={posterW}
+                  height={posterH}
+                  style={{
+                    borderRadius: isStories ? 8 : 5,
+                    objectFit: "cover",
+                    flexShrink: 0,
+                    border: item.rank === 1
+                      ? "1.5px solid rgba(245,158,11,0.28)"
+                      : "1px solid rgba(255,255,255,0.07)",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: posterW,
+                    height: posterH,
+                    background: "rgba(255,255,255,0.05)",
+                    borderRadius: isStories ? 8 : 5,
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+
+              {/* Title + year */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  flex: 1,
+                  gap: isStories ? 5 : 3,
+                  overflow: "hidden",
+                  minWidth: 0,
+                }}
+              >
+                <span
+                  style={{
+                    color: item.rank === 1 ? "#ffffff" : "rgba(255,255,255,0.82)",
+                    fontSize: titleSize,
+                    fontWeight: item.rank === 1 ? 700 : 600,
+                    lineHeight: 1.25,
+                    letterSpacing: "-0.2px",
+                    overflow: "hidden",
+                    display: "-webkit-box",
+                    WebkitLineClamp: "2",
+                    WebkitBoxOrient: "vertical",
+                  }}
+                >
+                  {item.title}
+                </span>
+                <span style={{ color: "rgba(255,255,255,0.28)", fontSize: yearSize }}>
+                  {item.year}{item.mediaType === "tv" ? "  ·  TV" : ""}
+                </span>
+              </div>
+
+              {/* Score pill */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: isStories ? 54 : 32,
+                  height: isStories ? 54 : 32,
+                  borderRadius: "50%",
+                  background: item.rank === 1
+                    ? "rgba(245,158,11,0.12)"
+                    : "rgba(37,99,235,0.10)",
+                  border: item.rank === 1
+                    ? "1.5px solid rgba(245,158,11,0.30)"
+                    : "1px solid rgba(37,99,235,0.22)",
+                  flexShrink: 0,
+                }}
+              >
+                <span
+                  style={{
+                    color: item.rank === 1 ? "#F59E0B" : "#60a5fa",
+                    fontSize: isStories ? 19 : 11,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  {item.score.toFixed(1)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* ── Footer ── */}
-        <div style={{ marginTop: "auto", display: "flex", justifyContent: "center", paddingTop: isStories ? 40 : 20 }}>
-          <span style={{ color: "rgba(255,255,255,0.18)", fontSize: isStories ? 20 : 11 }}>
-            binge.app · Rank what you watch
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            paddingTop: isStories ? 40 : 18,
+          }}
+        >
+          <span
+            style={{
+              color: "rgba(255,255,255,0.12)",
+              fontSize: isStories ? 18 : 10,
+              letterSpacing: "0.8px",
+            }}
+          >
+            binge.app  ·  rank what you love
           </span>
         </div>
       </div>
     ),
     {
-      width,
-      height,
-      fonts: [
-        { name: "Inter", data: fontRegular, weight: 400, style: "normal" },
-        { name: "Inter", data: fontBold, weight: 700, style: "normal" },
-      ],
+      width: W,
+      height: H,
+      fonts: fonts.length > 0 ? fonts : undefined,
       headers: {
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+        "Cache-Control": "public, max-age=600, stale-while-revalidate=300",
         "Content-Disposition": `inline; filename="binge-top5.png"`,
       },
     }
-  )
-}
-
-function RankRow({
-  item,
-  isStories,
-  posterW,
-  posterH,
-}: {
-  item: RankedItem
-  isStories: boolean
-  posterW: number
-  posterH: number
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: isStories ? 18 : 10,
-        background: "rgba(255,255,255,0.04)",
-        borderRadius: isStories ? 14 : 8,
-        padding: isStories ? "14px 18px" : "8px 10px",
-        border: "1px solid rgba(255,255,255,0.07)",
-      }}
-    >
-      {/* Rank */}
-      <span
-        style={{
-          color: item.rank === 1 ? "#2563EB" : "rgba(255,255,255,0.2)",
-          fontSize: isStories ? 44 : 24,
-          fontWeight: 800,
-          width: isStories ? 52 : 28,
-          textAlign: "center",
-          lineHeight: 1,
-        }}
-      >
-        {item.rank}
-      </span>
-
-      {/* Poster */}
-      {item.posterDataUrl ? (
-        <img
-          src={item.posterDataUrl}
-          width={posterW}
-          height={posterH}
-          style={{ borderRadius: isStories ? 8 : 4, objectFit: "cover" }}
-        />
-      ) : (
-        <div style={{ width: posterW, height: posterH, background: "#1a1a2e", borderRadius: isStories ? 8 : 4 }} />
-      )}
-
-      {/* Info */}
-      <div style={{ display: "flex", flexDirection: "column", flex: 1, gap: isStories ? 6 : 3 }}>
-        <span style={{ color: "#fff", fontSize: isStories ? 26 : 14, fontWeight: 700, lineHeight: 1.3 }}>
-          {item.title}
-        </span>
-        <span style={{ color: "rgba(255,255,255,0.35)", fontSize: isStories ? 20 : 11 }}>
-          {item.year}
-        </span>
-        {/* Score bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: isStories ? 4 : 2 }}>
-          <div style={{ width: Math.max(isStories ? item.score * 1.2 : item.score * 0.6, 4), height: isStories ? 4 : 3, background: "#2563EB", borderRadius: 2 }} />
-          <span style={{ color: "#60a5fa", fontSize: isStories ? 18 : 10, fontWeight: 600 }}>
-            {item.score}
-          </span>
-        </div>
-      </div>
-    </div>
   )
 }

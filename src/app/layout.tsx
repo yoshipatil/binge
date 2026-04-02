@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import { auth } from "@/auth";
 import NavBar from "@/components/NavBar";
@@ -10,9 +10,10 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import PostHogProvider from "@/components/PostHogProvider";
 import { Toaster } from "react-hot-toast";
 
-const geist = Geist({
-  variable: "--font-geist-sans",
+const outfit = Outfit({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
 });
 
 export const viewport: Viewport = {
@@ -48,7 +49,7 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html lang="en" className={`${geist.variable} h-full antialiased`}>
+    <html lang="en" className={`${outfit.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <Providers session={session}>
           <PostHogProvider>
@@ -69,6 +70,7 @@ export default async function RootLayout({
         </Providers>
         <Toaster
           position="top-center"
+          containerStyle={{ top: "env(safe-area-inset-top, 0px)" }}
           toastOptions={{
             duration: 3000,
             style: {

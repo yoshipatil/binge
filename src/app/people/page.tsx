@@ -5,7 +5,8 @@ import { getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
 import { getTitle } from "@/types"
 import Image from "next/image"
 import Link from "next/link"
-import { UserPlus, Users, Clock, TrendingUp, Trophy } from "lucide-react"
+import { UserPlus, Users, Clock, TrendingUp, Trophy, UserCheck } from "lucide-react"
+import FollowButton from "@/components/FollowButton"
 import { normalizeEloScores } from "@/lib/elo"
 import { getTier } from "@/lib/tiers"
 
@@ -27,6 +28,46 @@ function timeAgo(date: Date): string {
   return `${Math.floor(seconds / 86400)}d ago`
 }
 
+// ── You May Know — friends-of-friends suggestions ─────────────────────────────
+interface Suggestion {
+  id: string
+  name: string | null
+  username: string | null
+  image: string | null
+  mutualCount: number
+}
+
+async function getSuggestions(userId: string, followingIds: string[]): Promise<Suggestion[]> {
+  if (followingIds.length === 0) return []
+  try {
+    // Friends-of-friends: who do my friends follow that I don't?
+    const friendsFollowing = await prisma.follow.findMany({
+      where: { followerId: { in: followingIds }, followingId: { not: userId } },
+      select: { followingId: true, followerId: true },
+    })
+    // Count mutual connections per candidate
+    const mutualMap = new Map<string, Set<string>>()
+    for (const row of friendsFollowing) {
+      if (followingIds.includes(row.followingId)) continue // already following
+      const set = mutualMap.get(row.followingId) ?? new Set()
+      set.add(row.followerId)
+      mutualMap.set(row.followingId, set)
+    }
+    if (mutualMap.size === 0) return []
+    const candidateIds = [...mutualMap.keys()].slice(0, 10)
+    const users = await prisma.user.findMany({
+      where: { id: { in: candidateIds } },
+      select: { id: true, name: true, username: true, image: true },
+    })
+    return users
+      .map((u) => ({ ...u, mutualCount: mutualMap.get(u.id)?.size ?? 0 }))
+      .sort((a, b) => b.mutualCount - a.mutualCount)
+      .slice(0, 6)
+  } catch {
+    return []
+  }
+}
+
 export default async function FriendsPage() {
   const session = await auth()
   if (!session?.user?.id) redirect("/sign-in")
@@ -41,6 +82,9 @@ export default async function FriendsPage() {
   const followersCount = followerRows.length
   const followingCount = followingIds.length
   const hasFollows = followingIds.length > 0
+
+  // Fetch suggestions in parallel with activity feed
+  const suggestionsPromise = getSuggestions(userId, followingIds)
 
   // ── Activity feed ──────────────────────────────────────────────────
   let activity: {
@@ -141,6 +185,8 @@ export default async function FriendsPage() {
     trending = trendingRaw.map((r, i) => ({ ...r, title: trendingTMDB[i].title, poster: trendingTMDB[i].poster }))
   }
 
+  const suggestions = await suggestionsPromise
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 pb-28 md:pb-8">
       {/* Page header */}
@@ -209,6 +255,61 @@ export default async function FriendsPage() {
           <Clock className="h-8 w-8 text-white/20" />
           <p className="text-sm text-white/35">Your circle hasn&apos;t ranked anything yet.</p>
         </div>
+      )}
+
+      {/* ── You May Know ── */}
+      {suggestions.length > 0 && (
+        <section className="mb-10">
+          <div className="mb-3 flex items-center gap-2">
+            <UserCheck className="h-3.5 w-3.5 text-white/50" />
+            <h2 className="text-xs font-bold uppercase tracking-widest text-white/50">People You May Know</h2>
+          </div>
+          <div className="flex flex-col gap-2">
+            {suggestions.map((person) => (
+              <div key={person.id} className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3">
+                {/* Avatar */}
+                <Link href={`/profile/${person.id}`} className="flex-shrink-0">
+                  {person.image ? (
+                    <Image
+                      src={person.image}
+                      alt={person.name ?? ""}
+                      width={40}
+                      height={40}
+                      className="rounded-full ring-1 ring-white/10"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center ring-1 ring-white/10">
+                      <span className="text-sm font-bold text-blue-400">
+                        {(person.name ?? "?")[0].toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </Link>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <Link href={`/profile/${person.id}`}>
+                    <p className="truncate text-sm font-semibold text-white/90 hover:text-white transition-colors">
+                      {person.name ?? "Binge User"}
+                    </p>
+                  </Link>
+                  <p className="text-xs text-white/30">
+                    {person.username ? `@${person.username}` : ""}
+                    {person.username && person.mutualCount > 0 ? " · " : ""}
+                    {person.mutualCount > 0
+                      ? `${person.mutualCount} mutual connection${person.mutualCount !== 1 ? "s" : ""}`
+                      : ""}
+                  </p>
+                </div>
+
+                {/* Follow CTA */}
+                <div className="flex-shrink-0">
+                  <FollowButton targetId={person.id} initialIsFollowing={false} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* ── Activity feed ── */}

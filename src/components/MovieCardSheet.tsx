@@ -26,7 +26,11 @@ export default function MovieCardSheet({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const touchMoved = useRef(false)
 
-  const handleTouchStart = useCallback(() => {
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // Don't trigger long-press when the user is tapping an interactive element
+    // (button, link, etc.) — prevents sheet appearing after tapping Rate/Watchlist
+    const target = e.target as HTMLElement
+    if (target.closest('button, a, [role="button"], input')) return
     touchMoved.current = false
     timerRef.current = setTimeout(() => {
       if (!touchMoved.current) setOpen(true)

@@ -113,9 +113,14 @@ body::before {
   }
   body {
     @apply bg-background text-foreground;
+    /* Prevent rubber-band bounce in mobile browser — PWA already suppresses this */
+    overscroll-behavior-y: none;
   }
   html {
     @apply font-sans;
     -webkit-tap-highlight-color: transparent;
+    /* Momentum scrolling on iOS Safari browser (matches PWA physics) */
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
   }
 }

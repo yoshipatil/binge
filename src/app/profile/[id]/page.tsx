@@ -8,7 +8,7 @@ import { getTier } from "@/lib/tiers"
 import { getMovieDetails, getTVDetails, getPosterUrl, getMultipleMovies } from "@/lib/tmdb"
 import FollowButton from "@/components/FollowButton"
 import ProfileMenu from "@/components/ProfileMenu"
-import ShareCardButton from "@/components/ShareCardButton"
+import ShareCardPreview from "@/components/ShareCardPreview"
 import ProfileTabSwitcher from "@/components/ProfileTabSwitcher"
 import TierList from "@/components/TierList"
 import AvatarUpload from "@/components/AvatarUpload"
@@ -399,13 +399,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
           </div>
 
           {isOwnProfile && hasAnyRankings && (
-            <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-5 text-center">
-              <p className="text-sm font-semibold text-white/70">Share your Top 5</p>
-              <p className="text-xs text-white/35 max-w-xs">
-                Generate a beautiful card of your rankings — share to Instagram Stories, iMessage, or anywhere.
-              </p>
-              <ShareCardButton userId={id} />
-            </div>
+            <ShareCardPreview userId={id} />
           )}
         </>
       )}
