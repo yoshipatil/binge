@@ -8,7 +8,7 @@ import { checkRateLimit, getClientIp, rateLimitedResponse } from "@/lib/rateLimi
 export async function GET(request: NextRequest) {
   const { allowed, retryAfterMs } = checkRateLimit(
     `search:${getClientIp(request.headers)}`,
-    20,
+    40,
     60_000
   )
   if (!allowed) return rateLimitedResponse(retryAfterMs)

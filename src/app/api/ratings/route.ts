@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const userId = session.user.id
-  const { allowed, retryAfterMs } = checkRateLimit(`ratings-post:${userId}`, 30, 60_000)
+  const { allowed, retryAfterMs } = checkRateLimit(`ratings-post:${userId}`, 60, 60_000)
   if (!allowed) return rateLimitedResponse(retryAfterMs)
 
   try {

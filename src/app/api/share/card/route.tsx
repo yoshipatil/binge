@@ -12,6 +12,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { normalizeEloScores } from "@/lib/elo"
 import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
+import { checkRateLimit, getClientIp, rateLimitedResponse } from "@/lib/rateLimit"
 
 export const runtime = "nodejs"
 
@@ -67,6 +68,15 @@ async function getFont(url: string): Promise<ArrayBuffer | null> {
 
 // ── Route handler ──────────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
+  // Rate limit strictly — this is the most expensive endpoint (5 TMDB calls +
+  // 5 poster fetches + 3 font fetches + OG image render per request).
+  const { allowed, retryAfterMs } = checkRateLimit(
+    `share-card:${getClientIp(request.headers)}`,
+    20,
+    60_000
+  )
+  if (!allowed) return rateLimitedResponse(retryAfterMs)
+
   const { searchParams } = request.nextUrl
   const requestedUserId = searchParams.get("userId")
   const cardType = searchParams.get("type") ?? "preview"
@@ -81,7 +91,10 @@ export async function GET(request: NextRequest) {
   })
   if (!user) return new Response("Not found", { status: 404 })
 
-  const allRatings = await prisma.rating.findMany({ where: { userId } })
+  const allRatings = await prisma.rating.findMany({
+    where: { userId },
+    select: { tmdbId: true, mediaType: true, eloScore: true },
+  })
   if (allRatings.length === 0) {
     return new Response("No ratings yet", { status: 400 })
   }
