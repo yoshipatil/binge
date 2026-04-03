@@ -2,7 +2,7 @@
 // Uses Next.js ISR caching (revalidate every hour) to stay within TMDB rate limits
 // Attribution required by TMDB ToS — shown in app footer
 
-import type { TMDBMovie, TMDBSearchResponse } from "@/types"
+import type { TMDBMovie, TMDBSearchResponse, TMDBSeason } from "@/types"
 
 const BASE = "https://api.themoviedb.org/3"
 const IMG = "https://image.tmdb.org/t/p"
@@ -62,6 +62,11 @@ export function getMovieDetails(tmdbId: number): Promise<TMDBMovie> {
 // Get full TV show details
 export function getTVDetails(tmdbId: number): Promise<TMDBMovie> {
   return tmdbFetch<TMDBMovie>(`/tv/${tmdbId}`)
+}
+
+// Get all episodes for a specific season — used by episode tracking
+export function getTVSeasonDetails(showId: number, seasonNum: number): Promise<TMDBSeason> {
+  return tmdbFetch<TMDBSeason>(`/tv/${showId}/season/${seasonNum}`)
 }
 
 // Get TMDB's recommendations for a movie

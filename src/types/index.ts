@@ -16,6 +16,8 @@ export interface TMDBMovie {
   genres?: { id: number; name: string }[]
   runtime?: number | null
   number_of_seasons?: number
+  number_of_episodes?: number
+  seasons?: { season_number: number; episode_count: number; name: string; poster_path: string | null }[]
   media_type?: "movie" | "tv" | "person"
 }
 
@@ -52,6 +54,28 @@ export interface WatchlistItem {
     addedAt: string
   }
   movie: TMDBMovie
+}
+
+// TMDB TV season/episode types
+export interface TMDBEpisode {
+  id: number
+  episode_number: number
+  season_number: number
+  name: string
+  overview: string
+  still_path: string | null
+  air_date: string | null
+  runtime: number | null
+}
+
+export interface TMDBSeason {
+  id: number
+  name: string
+  season_number: number
+  episode_count: number
+  air_date: string | null
+  poster_path: string | null
+  episodes: TMDBEpisode[]
 }
 
 // TMDB genre

@@ -1,16 +1,29 @@
+"use client"
+
 import Image from "next/image"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Tv, Film, FileVideo } from "lucide-react"
 import { getPosterUrl } from "@/lib/tmdb"
-import { getTier, UNRATED } from "@/lib/tiers"
+import { getTier } from "@/lib/tiers"
 import { getTitle, getReleaseYear, type TMDBMovie, type MediaType } from "@/types"
+import EpisodeProgressPill from "@/components/episodes/EpisodeProgressPill"
+import EpisodePanel from "@/components/episodes/EpisodePanel"
+
+interface EpisodeStats {
+  totalWatched: number
+  totalEpisodes: number
+  perSeason: Record<number, number>
+}
 
 interface MovieCardProps {
   movie: TMDBMovie
   mediaType: MediaType
   displayScore?: number // ELO-normalized score (0–10), undefined if unrated
   actions?: React.ReactNode // optional buttons (Rate, Add to watchlist, etc.)
+  // Episode tracking — only used when mediaType === "tv"
+  episodeStats?: EpisodeStats
+  onWatchedChange?: (showTmdbId: number, perSeason: Record<number, number>) => void
 }
 
 const mediaIcons: Record<MediaType, React.ElementType> = {
@@ -25,11 +38,23 @@ const mediaLabels: Record<MediaType, string> = {
   documentary: "Doc",
 }
 
-export default function MovieCard({ movie, mediaType, displayScore, actions }: MovieCardProps) {
+export default function MovieCard({
+  movie,
+  mediaType,
+  displayScore,
+  actions,
+  episodeStats,
+  onWatchedChange,
+}: MovieCardProps) {
   const title = getTitle(movie)
   const year = getReleaseYear(movie)
   const tier = displayScore !== undefined ? getTier(displayScore) : null
   const MediaIcon = mediaIcons[mediaType]
+
+  // Guard: only show episode tracking for TV shows that have at least one non-special season
+  const hasSeasons =
+    mediaType === "tv" &&
+    (movie.seasons?.filter(s => s.season_number > 0).length ?? 0) > 0
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-lg bg-white/[0.02] transition-all duration-300 hover:bg-white/[0.05] hover:shadow-[0_0_20px_rgba(37,99,235,0.12)]">
@@ -85,7 +110,26 @@ export default function MovieCard({ movie, mediaType, displayScore, actions }: M
           )}
         </div>
 
+        {/* Episode progress pill — TV only */}
+        {hasSeasons && episodeStats && (
+          <EpisodeProgressPill
+            totalWatched={episodeStats.totalWatched}
+            totalEpisodes={episodeStats.totalEpisodes}
+          />
+        )}
+
         {actions && <div className="mt-1.5">{actions}</div>}
+
+        {/* Episode panel — TV only, below actions */}
+        {hasSeasons && (
+          <EpisodePanel
+            show={movie}
+            showTmdbId={movie.id}
+            showTitle={title}
+            initialPerSeason={episodeStats?.perSeason}
+            onWatchedChange={onWatchedChange}
+          />
+        )}
       </div>
     </div>
   )

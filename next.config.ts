@@ -9,12 +9,46 @@ const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
 ]
 
+// Allowed origins for API calls.
+// Web: same-origin only (empty CORS list = browser enforces same-origin).
+// Future native apps: add "capacitor://localhost", "ionic://localhost", or
+// "https://binge.app" here when building iOS/Android clients.
+// These origins are validated per-request via the CORS headers below.
+const ALLOWED_API_ORIGINS = [
+  process.env.NEXTAUTH_URL ?? "http://localhost:3000",
+].filter(Boolean)
+
 const nextConfig: NextConfig = {
   async headers() {
     return [
+      // Security headers on all routes
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      // CORS headers on API routes — locked to allowed origins.
+      // Credentials (cookies/auth tokens) are allowed so Auth.js sessions work.
+      // Future native apps get a separate ALLOWED_API_ORIGINS entry.
+      {
+        source: "/api/(.*)",
+        headers: [
+          {
+            key: "Access-Control-Allow-Origin",
+            value: ALLOWED_API_ORIGINS[0] ?? "",
+          },
+          {
+            key: "Access-Control-Allow-Methods",
+            value: "GET,POST,DELETE,PATCH,OPTIONS",
+          },
+          {
+            key: "Access-Control-Allow-Headers",
+            value: "Content-Type, Authorization",
+          },
+          {
+            key: "Access-Control-Allow-Credentials",
+            value: "true",
+          },
+        ],
       },
     ]
   },

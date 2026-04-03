@@ -67,6 +67,20 @@ model User {
   @@index([username])
 }
 
+// Tracks individual TV episodes watched per user per show.
+// Enables per-season progress, "continue watching" logic, and social signals.
+model WatchedEpisode {
+  id          String   @id @default(cuid())
+  userId      String
+  showTmdbId  Int
+  seasonNum   Int
+  episodeNum  Int
+  watchedAt   DateTime @default(now())
+
+  @@unique([userId, showTmdbId, seasonNum, episodeNum])
+  @@index([userId, showTmdbId])
+}
+
 // Follow relationships — follower follows following.
 // Used to compute friends' aggregate scores on movie pages
 // and to build the activity feed (future).

@@ -7,10 +7,12 @@ import { getMultipleMovies } from "@/lib/tmdb"
 import MovieCard from "@/components/MovieCard"
 import MovieCardSheet from "@/components/MovieCardSheet"
 import RateMovieDialog from "@/components/RateMovieDialog"
+import TVCardEpisodeWrapper from "@/components/episodes/TVCardEpisodeWrapper"
 import MediaTypeTabs from "@/components/MediaTypeTabs"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { MediaType } from "@/types"
+import { getEpisodeStatsBatch } from "@/lib/episodeStats"
+import type { MediaType, TMDBMovie } from "@/types"
 import { Star, BookmarkX } from "lucide-react"
 
 interface WatchlistPageProps {
@@ -48,28 +50,66 @@ async function WatchlistGrid({ mediaType, userId }: { mediaType: string | undefi
     filtered.map((i) => ({ tmdbId: i.tmdbId, mediaType: i.mediaType }))
   )
 
+  // Fetch episode stats for all TV items in one Prisma query (no HTTP round-trip)
+  const tvShowIds = filtered
+    .filter((item, i) =>
+      item.mediaType === "tv" &&
+      movies[i] != null &&
+      (movies[i]!.seasons?.filter(s => s.season_number > 0).length ?? 0) > 0
+    )
+    .map(item => item.tmdbId)
+
+  const episodeStatsMap = await getEpisodeStatsBatch(userId, tvShowIds)
+
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-      {filtered.map((item, i) => (
-        <MovieCardSheet key={item.id} movie={movies[i]} mediaType={item.mediaType as MediaType} initialInWatchlist>
-          <MovieCard
-            movie={movies[i]}
+      {filtered.map((item, i) => {
+        const movie = movies[i] as TMDBMovie
+        const isTVWithSeasons =
+          item.mediaType === "tv" &&
+          movie != null &&
+          (movie.seasons?.filter(s => s.season_number > 0).length ?? 0) > 0
+
+        const rateAction = (
+          <RateMovieDialog
+            movie={movie}
             mediaType={item.mediaType as MediaType}
-            actions={
-              <RateMovieDialog
-                movie={movies[i]}
-                mediaType={item.mediaType as MediaType}
-                trigger={
-                  <Button size="sm" className="h-9 w-full gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0">
-                    <Star className="h-3 w-3" />
-                    Rate it
-                  </Button>
-                }
-              />
+            trigger={
+              <Button size="sm" className="h-9 w-full gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0">
+                <Star className="h-3 w-3" />
+                Rate it
+              </Button>
             }
           />
-        </MovieCardSheet>
-      ))}
+        )
+
+        const episodeStats = episodeStatsMap.get(item.tmdbId)
+        if (isTVWithSeasons && episodeStats) {
+          const totalEpisodes = movie.seasons
+            ?.filter(s => s.season_number > 0)
+            .reduce((a, s) => a + s.episode_count, 0) ?? 0
+          return (
+            <MovieCardSheet key={item.id} movie={movie} mediaType={item.mediaType as MediaType} initialInWatchlist>
+              <TVCardEpisodeWrapper
+                movie={movie}
+                mediaType={item.mediaType as MediaType}
+                actions={rateAction}
+                initialEpisodeStats={{ ...episodeStats, totalEpisodes }}
+              />
+            </MovieCardSheet>
+          )
+        }
+
+        return (
+          <MovieCardSheet key={item.id} movie={movie} mediaType={item.mediaType as MediaType} initialInWatchlist>
+            <MovieCard
+              movie={movie}
+              mediaType={item.mediaType as MediaType}
+              actions={rateAction}
+            />
+          </MovieCardSheet>
+        )
+      })}
     </div>
   )
 }
