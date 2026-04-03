@@ -46,12 +46,16 @@ export async function GET() {
   })
 
   const mostCompared = topComparers
-    .map((c) => {
+    .map((c, i) => {
       const user = comparerUsers.find((u) => u.id === c.userId)
       if (!user) return null
       return {
-        user,
-        comparisons: c._count.id,
+        rank: i + 1,
+        userId: user.id,
+        name: user.name,
+        image: user.image,
+        username: user.username,
+        value: c._count.id,
         isCurrentUser: c.userId === userId,
       }
     })
@@ -118,13 +122,16 @@ export async function GET() {
   })
 
   const boldRankers = top5Bold
-    .map((b) => {
+    .map((b, i) => {
       const user = boldUsers.find((u) => u.id === b.userId)
       if (!user) return null
       return {
-        user,
-        boldness: b.boldness,
-        divergences: b.divergences,
+        rank: i + 1,
+        userId: user.id,
+        name: user.name,
+        image: user.image,
+        username: user.username,
+        value: b.boldness,
         isCurrentUser: b.userId === userId,
       }
     })

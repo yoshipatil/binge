@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Users, Zap, Trophy, Flame, ArrowLeft } from "lucide-react"
+import { Users, Zap, Trophy, Flame } from "lucide-react"
+import CircleLeaderboardTabs from "@/components/CircleLeaderboardTabs"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -94,15 +95,6 @@ export default function LeaderboardPage() {
 
       {/* ── Page header ── */}
       <div className="mb-6 md:mb-8">
-        {/* Back link — mobile */}
-        <Link
-          href="/people"
-          className="mb-4 flex items-center gap-1.5 text-sm text-white/40 hover:text-white/70 transition-colors md:hidden"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Your Circle
-        </Link>
-
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black tracking-tight md:text-3xl">Leaderboard</h1>
@@ -111,6 +103,9 @@ export default function LeaderboardPage() {
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500/15">
             <Trophy className="h-5 w-5 text-amber-400" />
           </div>
+        </div>
+        <div className="mt-4">
+          <CircleLeaderboardTabs />
         </div>
       </div>
 

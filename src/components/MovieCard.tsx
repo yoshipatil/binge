@@ -8,7 +8,6 @@ import { getPosterUrl } from "@/lib/tmdb"
 import { getTier } from "@/lib/tiers"
 import { getTitle, getReleaseYear, type TMDBMovie, type MediaType } from "@/types"
 import EpisodeProgressPill from "@/components/episodes/EpisodeProgressPill"
-import EpisodePanel from "@/components/episodes/EpisodePanel"
 
 interface EpisodeStats {
   totalWatched: number
@@ -21,9 +20,8 @@ interface MovieCardProps {
   mediaType: MediaType
   displayScore?: number // ELO-normalized score (0–10), undefined if unrated
   actions?: React.ReactNode // optional buttons (Rate, Add to watchlist, etc.)
-  // Episode tracking — only used when mediaType === "tv"
+  // Episode tracking pill — only used when mediaType === "tv"
   episodeStats?: EpisodeStats
-  onWatchedChange?: (showTmdbId: number, perSeason: Record<number, number>) => void
 }
 
 const mediaIcons: Record<MediaType, React.ElementType> = {
@@ -44,7 +42,6 @@ export default function MovieCard({
   displayScore,
   actions,
   episodeStats,
-  onWatchedChange,
 }: MovieCardProps) {
   const title = getTitle(movie)
   const year = getReleaseYear(movie)
@@ -119,17 +116,6 @@ export default function MovieCard({
         )}
 
         {actions && <div className="mt-1.5">{actions}</div>}
-
-        {/* Episode panel — TV only, below actions */}
-        {hasSeasons && (
-          <EpisodePanel
-            show={movie}
-            showTmdbId={movie.id}
-            showTitle={title}
-            initialPerSeason={episodeStats?.perSeason}
-            onWatchedChange={onWatchedChange}
-          />
-        )}
       </div>
     </div>
   )

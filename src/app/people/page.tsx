@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { Suspense } from "react"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
@@ -7,6 +8,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { UserPlus, Users, Clock, TrendingUp, Trophy, UserCheck, Popcorn } from "lucide-react"
 import FollowButton from "@/components/FollowButton"
+import CircleLeaderboardTabs from "@/components/CircleLeaderboardTabs"
 import { normalizeEloScores } from "@/lib/elo"
 import { getTier } from "@/lib/tiers"
 
@@ -210,23 +212,20 @@ export default async function FriendsPage() {
             </Link>
           </div>
         </div>
-        {/* Action buttons */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Link
-            href="/leaderboard"
-            className="flex h-[44px] w-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-amber-400 active:scale-95 transition-all duration-150"
-            aria-label="Leaderboard"
-          >
-            <Trophy className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/people/search"
-            className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-3 min-h-[44px] text-sm font-semibold text-white hover:bg-blue-500 active:scale-95 transition-all duration-150"
-          >
-            <UserPlus className="h-4 w-4" />
-            <span>Find People</span>
-          </Link>
-        </div>
+        <Link
+          href="/people/search"
+          className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-3 min-h-[44px] text-sm font-semibold text-white hover:bg-blue-500 active:scale-95 transition-all duration-150 flex-shrink-0"
+        >
+          <UserPlus className="h-4 w-4" />
+          <span>Find People</span>
+        </Link>
+      </div>
+
+      {/* Circle / Leaderboard tab switcher */}
+      <div className="mb-6">
+        <Suspense fallback={null}>
+          <CircleLeaderboardTabs />
+        </Suspense>
       </div>
 
       {/* ── Watch Together card (only when following people) ── */}

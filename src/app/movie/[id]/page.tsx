@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Star, Clock, Calendar, Tv } from "lucide-react"
 import { getTitle, getReleaseYear, getMediaType, type MediaType } from "@/types"
+import { getEpisodeStats } from "@/lib/episodeStats"
+import EpisodePanel from "@/components/episodes/EpisodePanel"
 
 interface MoviePageProps {
   params: Promise<{ id: string }>
@@ -145,6 +147,16 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
   const isInWatchlist = userId
     ? !!(await prisma.watchlist.findFirst({ where: { userId, tmdbId: Number(id) } }))
     : false
+
+  // Fetch episode stats for TV shows (used to seed the progress pill on the detail page)
+  const isTVWithSeasons =
+    mediaType === "tv" &&
+    (movie.seasons?.filter((s) => s.season_number > 0).length ?? 0) > 0
+
+  const episodeStats =
+    isTVWithSeasons && userId
+      ? await getEpisodeStats(userId, Number(id))
+      : null
 
   const title = getTitle(movie)
   const year = getReleaseYear(movie)
@@ -337,6 +349,29 @@ export default async function MoviePage({ params, searchParams }: MoviePageProps
             )}
           </div>
         </div>
+
+        {/* Episode Tracker — TV shows only */}
+        {isTVWithSeasons && userId && (
+          <div className="mt-10">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold tracking-tight text-white/90">Episodes</h2>
+                {episodeStats && episodeStats.totalWatched > 0 && (
+                  <p className="mt-0.5 text-xs text-white/35">
+                    {episodeStats.totalWatched} watched
+                  </p>
+                )}
+              </div>
+            </div>
+            <EpisodePanel
+              show={movie}
+              showTmdbId={movie.id}
+              showTitle={title}
+              initialPerSeason={episodeStats?.perSeason}
+              defaultOpen
+            />
+          </div>
+        )}
 
         {/* Recommendations */}
         {recResults.length > 0 && (

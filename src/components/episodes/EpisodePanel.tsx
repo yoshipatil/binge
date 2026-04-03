@@ -25,6 +25,8 @@ interface EpisodePanelProps {
   showTitle: string
   initialPerSeason?: Record<number, number>
   onWatchedChange?: (showTmdbId: number, perSeason: Record<number, number>) => void
+  /** When true, panel starts open with no toggle button — used on the show detail page */
+  defaultOpen?: boolean
 }
 
 function recomputePerSeason(watched: WatchedEntry[]): Record<number, number> {
@@ -41,11 +43,12 @@ export default function EpisodePanel({
   showTitle,
   initialPerSeason,
   onWatchedChange,
+  defaultOpen = false,
 }: EpisodePanelProps) {
   const shouldReduceMotion = useReducedMotion()
   const triggerRef = useRef<HTMLButtonElement>(null)
 
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(defaultOpen)
   const [activeSeason, setActiveSeason] = useState<number | null>(null)
   const [watchedData, setWatchedData] = useState<WatchedData | null>(
     initialPerSeason
@@ -120,6 +123,17 @@ export default function EpisodePanel({
     },
     [showTmdbId, seasonEpisodes, loadingSeasons]
   )
+
+  // When defaultOpen=true, trigger fetch + set season immediately on mount
+  useEffect(() => {
+    if (defaultOpen) {
+      if (watchedFetchState === "idle") fetchWatchedData()
+      if (activeSeason === null && firstNonSpecialSeason !== null) {
+        setActiveSeason(firstNonSpecialSeason)
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultOpen])
 
   // When panel opens, fetch watched data and set active season
   const handleToggleOpen = () => {
@@ -327,37 +341,39 @@ export default function EpisodePanel({
 
   return (
     <div>
-      {/* Track Episodes / Hide Episodes button */}
-      <button
-        ref={triggerRef}
-        aria-expanded={isOpen}
-        aria-controls={`episode-panel-${showTmdbId}`}
-        tabIndex={0}
-        onClick={handleToggleOpen}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault()
-            handleToggleOpen()
+      {/* Toggle button — hidden when defaultOpen (detail page mode) */}
+      {!defaultOpen && (
+        <button
+          ref={triggerRef}
+          aria-expanded={isOpen}
+          aria-controls={`episode-panel-${showTmdbId}`}
+          tabIndex={0}
+          onClick={handleToggleOpen}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault()
+              handleToggleOpen()
+            }
+          }}
+          className={
+            isOpen
+              ? "mt-0.5 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-blue-600/40 bg-blue-600/10 text-[11px] font-medium text-blue-400 transition-colors hover:bg-blue-600/15"
+              : "mt-0.5 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-transparent text-[11px] font-medium text-white/50 transition-colors hover:border-white/[0.14] hover:bg-white/[0.04] hover:text-white/80 active:scale-[0.98]"
           }
-        }}
-        className={
-          isOpen
-            ? "mt-0.5 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-blue-600/40 bg-blue-600/10 text-[11px] font-medium text-blue-400 transition-colors hover:bg-blue-600/15"
-            : "mt-0.5 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-transparent text-[11px] font-medium text-white/50 transition-colors hover:border-white/[0.14] hover:bg-white/[0.04] hover:text-white/80 active:scale-[0.98]"
-        }
-      >
-        {isOpen ? (
-          <>
-            <ChevronUp className="h-3.5 w-3.5" />
-            Hide Episodes
-          </>
-        ) : (
-          <>
-            <ListVideo className="h-3.5 w-3.5" />
-            Track Episodes
-          </>
-        )}
-      </button>
+        >
+          {isOpen ? (
+            <>
+              <ChevronUp className="h-3.5 w-3.5" />
+              Hide Episodes
+            </>
+          ) : (
+            <>
+              <ListVideo className="h-3.5 w-3.5" />
+              Track Episodes
+            </>
+          )}
+        </button>
+      )}
 
       {/* Screen reader live region for watched state changes */}
       <div

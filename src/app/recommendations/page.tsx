@@ -3,18 +3,20 @@ import Link from "next/link"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import { getMovieRecommendations, getTVRecommendations, getWatchProvidersForMany } from "@/lib/tmdb"
+import { getMovieRecommendations, getTVRecommendations, getWatchProvidersForMany, getMultipleMovies } from "@/lib/tmdb"
 import MovieCard from "@/components/MovieCard"
 import MovieCardSheet from "@/components/MovieCardSheet"
 import RateMovieDialog from "@/components/RateMovieDialog"
 import WatchlistButton from "@/components/WatchlistButton"
 import StreamingFilter from "@/components/StreamingFilter"
+import ForYouTabSwitcher from "@/components/ForYouTabSwitcher"
 import { Button } from "@/components/ui/button"
-import { getMediaType, type TMDBMovie } from "@/types"
-import { Star, Sparkles, Tv } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { getMediaType, type TMDBMovie, type MediaType } from "@/types"
+import { Star, Sparkles, Tv, BookmarkX } from "lucide-react"
 
 interface RecsPageProps {
-  searchParams: Promise<{ streaming?: string }>
+  searchParams: Promise<{ streaming?: string; tab?: string }>
 }
 
 export default async function RecommendationsPage({ searchParams }: RecsPageProps) {
@@ -22,7 +24,72 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
   if (!session?.user?.id) redirect("/sign-in")
   const userId = session.user.id
 
-  const { streaming } = await searchParams
+  const { streaming, tab } = await searchParams
+  const activeTab = tab === "watchlist" ? "watchlist" : "foryou"
+
+  // ── Watchlist tab ──────────────────────────────────────────────────────────
+  if (activeTab === "watchlist") {
+    const watchlistItems = await prisma.watchlist.findMany({
+      where: { userId },
+      orderBy: { addedAt: "desc" },
+    })
+
+    const movies = watchlistItems.length > 0
+      ? await getMultipleMovies(watchlistItems.map(i => ({ tmdbId: i.tmdbId, mediaType: i.mediaType })))
+      : []
+
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">
+        <div className="mb-6 flex flex-col gap-4">
+          <PageHeader />
+          <Suspense fallback={null}>
+            <ForYouTabSwitcher />
+          </Suspense>
+        </div>
+
+        {watchlistItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-5 py-24 text-center">
+            <BookmarkX className="h-10 w-10 text-white/10" />
+            <div>
+              <p className="text-lg font-bold text-white">Nothing saved yet.</p>
+              <p className="mt-1.5 text-sm text-white/35">Add titles from search or any film page.</p>
+            </div>
+            <Link href="/search" className="rounded-xl bg-blue-600 px-5 py-3 min-h-[44px] text-sm font-semibold text-white hover:bg-blue-500 transition-colors">
+              Browse titles
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {watchlistItems.map((item, i) => {
+              const movie = movies[i] as TMDBMovie
+              if (!movie) return null
+              const mediaType = item.mediaType as MediaType
+              return (
+                <MovieCardSheet key={item.id} movie={movie} mediaType={mediaType} initialInWatchlist>
+                  <MovieCard
+                    movie={movie}
+                    mediaType={mediaType}
+                    actions={
+                      <RateMovieDialog
+                        movie={movie}
+                        mediaType={mediaType}
+                        trigger={
+                          <Button size="sm" className="h-9 w-full gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white border-0">
+                            <Star className="h-3 w-3" />
+                            Rate it
+                          </Button>
+                        }
+                      />
+                    }
+                  />
+                </MovieCardSheet>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const [topMovies, topTV] = await Promise.all([
     prisma.rating.findMany({
@@ -89,7 +156,10 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
   if (!hasEnoughRatings) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">
-        <PageHeader />
+        <div className="mb-6 flex flex-col gap-4">
+          <PageHeader />
+          <Suspense fallback={null}><ForYouTabSwitcher /></Suspense>
+        </div>
         <div className="flex flex-col items-center gap-5 py-24 text-center">
           <Sparkles className="h-10 w-10 text-white/10" />
           <div>
@@ -106,11 +176,10 @@ export default async function RecommendationsPage({ searchParams }: RecsPageProp
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">
-      <div className="mb-8 flex flex-col gap-4">
+      <div className="mb-6 flex flex-col gap-4">
         <PageHeader />
-        <Suspense fallback={null}>
-          <StreamingFilter />
-        </Suspense>
+        <Suspense fallback={null}><ForYouTabSwitcher /></Suspense>
+        <Suspense fallback={null}><StreamingFilter /></Suspense>
       </div>
 
       {!hasAnything && (

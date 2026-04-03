@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Binge — System Design</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px 64px;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: #2563EB;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: #fff;
+      letter-spacing: -1px;
+    }
+    .logo-text {
+      font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.5px;
+    }
+    .header h1 {
+      font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.35);
+      text-transform: uppercase; letter-spacing: 2px;
+    }
+
+    /* ── Diagram wrapper ─────────────────────────────── */
+    .diagram {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+
+    /* ── Layer row ───────────────────────────────────── */
+    .layer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .layer-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.25);
+      margin-bottom: 10px;
+    }
+
+    .layer-row {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    /* ── Cards ───────────────────────────────────────── */
+    .card {
+      flex: 1;
+      max-width: 220px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+    .card:hover {
+      border-color: rgba(37,99,235,0.4);
+      background: rgba(37,99,235,0.06);
+    }
+    .card.blue {
+      border-color: rgba(37,99,235,0.3);
+      background: rgba(37,99,235,0.08);
+    }
+    .card.blue:hover {
+      border-color: #2563EB;
+    }
+    .card.dim {
+      opacity: 0.55;
+      border-style: dashed;
+    }
+    .card.dim:hover {
+      opacity: 0.8;
+    }
+
+    .card-icon {
+      font-size: 22px;
+      margin-bottom: 2px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    .card-desc {
+      font-size: 11px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.5;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+      width: fit-content;
+    }
+    .badge-blue { background: rgba(37,99,235,0.2); color: #60a5fa; }
+    .badge-green { background: rgba(34,197,94,0.15); color: #86efac; }
+    .badge-orange { background: rgba(249,115,22,0.15); color: #fdba74; }
+    .badge-purple { background: rgba(139,92,246,0.15); color: #c4b5fd; }
+    .badge-dim { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.4); }
+
+    /* ── Big center card (Next.js App) ───────────────── */
+    .card-big {
+      width: 100%;
+      max-width: 640px;
+      background: rgba(37,99,235,0.08);
+      border: 1.5px solid rgba(37,99,235,0.35);
+      border-radius: 18px;
+      padding: 22px 20px;
+    }
+    .card-big:hover {
+      border-color: #2563EB;
+      background: rgba(37,99,235,0.12);
+    }
+    .card-big .card-title {
+      font-size: 15px;
+    }
+    .card-big-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .mini-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .mini-card-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 3px;
+    }
+    .mini-card-desc {
+      font-size: 10px;
+      color: rgba(255,255,255,0.35);
+      line-height: 1.4;
+    }
+
+    /* ── Arrows ──────────────────────────────────────── */
+    .arrow-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 44px;
+      position: relative;
+    }
+    .arrow-line {
+      width: 2px;
+      flex: 1;
+      background: rgba(37,99,235,0.3);
+    }
+    .arrow-head {
+      width: 0; height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid rgba(37,99,235,0.5);
+    }
+    .arrow-label {
+      position: absolute;
+      left: calc(50% + 10px);
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: rgba(255,255,255,0.25);
+      white-space: nowrap;
+    }
+
+    /* ── Side arrows (horizontal) ────────────────────── */
+    .side-connections {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 960px;
+      margin: 6px 0;
+      gap: 12px;
+      position: relative;
+    }
+    .side-card-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 200px;
+      flex-shrink: 0;
+    }
+    .center-placeholder {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .h-arrow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      position: relative;
+    }
+    .h-arrow-line {
+      height: 2px;
+      background: rgba(255,255,255,0.1);
+      flex: 1;
+      min-width: 60px;
+    }
+    .h-arrow-head-right {
+      width: 0; height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 7px solid rgba(255,255,255,0.15);
+    }
+    .h-arrow-label {
+      font-size: 9px;
+      color: rgba(255,255,255,0.2);
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    .both-arrows {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      min-width: 80px;
+    }
+    .both-arrows .h-arrow {
+      width: 100%;
+    }
+
+    /* ── Legend ──────────────────────────────────────── */
+    .legend {
+      display: flex;
+      gap: 20px;
+      margin-top: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+    }
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+
+    /* ── Footer ──────────────────────────────────────── */
+    .footer {
+      margin-top: 48px;
+      text-align: center;
+      font-size: 11px;
+      color: rgba(255,255,255,0.15);
+    }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 700px) {
+      .layer-row { flex-direction: column; align-items: center; }
+      .card { max-width: 100%; }
+      .side-connections { flex-direction: column; }
+      .side-card-group { width: 100%; }
+      .card-big-grid { grid-template-columns: 1fr; }
+      .both-arrows { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">B</div>
+      <div class="logo-text">Binge</div>
+    </div>
+    <h1>System Design — How It All Works</h1>
+  </div>
+
+  <!-- Diagram -->
+  <div class="diagram">
+
+    <!-- LAYER 1: Users -->
+    <div class="layer">
+      <div class="layer-label">Who Uses It</div>
+      <div class="layer-row">
+        <div class="card">
+          <div class="card-icon">📱</div>
+          <div class="card-title">Mobile (PWA)</div>
+          <div class="card-desc">iPhone or Android. Add to home screen — works like a native app.</div>
+          <span class="badge badge-blue">iOS · Android</span>
+        </div>
+        <div class="card">
+          <div class="card-icon">💻</div>
+          <div class="card-title">Desktop Browser</div>
+          <div class="card-desc">Chrome, Safari, Firefox. Full experience on any computer.</div>
+          <span class="badge badge-blue">Web</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow down -->
+    <div class="arrow-container">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <span class="arrow-label">HTTPS requests</span>
+    </div>
+
+    <!-- LAYER 2: App (center) + External Services (sides) -->
+    <div class="side-connections">
+
+      <!-- Left: External services -->
+      <div class="side-card-group">
+        <div class="card">
+          <div class="card-icon">🎬</div>
+          <div class="card-title">TMDB API</div>
+          <div class="card-desc">The Movie Database. Provides all movie & TV info, posters, and metadata.</div>
+          <span class="badge badge-orange">External API</span>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔐</div>
+          <div class="card-title">Google OAuth</div>
+          <div class="card-desc">Sign in with Google. No passwords to manage — Google handles identity.</div>
+          <span class="badge badge-orange">External API</span>
+        </div>
+      </div>
+
+      <!-- Center arrows -->
+      <div class="center-placeholder">
+        <div style="display:flex;flex-direction:column;gap:16px;align-items:center;width:100%;">
+          <!-- Arrow to TMDB -->
+          <div style="display:flex;align-items:center;gap:0;width:100%;">
+            <div style="height:1px;flex:1;background:rgba(249,115,22,0.25);"></div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.2);white-space:nowrap;padding:0 8px;">fetch posters &amp; metadata</div>
+            <div style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-right:6px solid rgba(249,115,22,0.3);"></div>
+          </div>
+          <!-- Arrow to Google -->
+          <div style="display:flex;align-items:center;gap:0;width:100%;">
+            <div style="height:1px;flex:1;background:rgba(249,115,22,0.25);"></div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.2);white-space:nowrap;padding:0 8px;">verify identity</div>
+            <div style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-right:6px solid rgba(249,115,22,0.3);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Main App -->
+      <div style="flex:2;display:flex;flex-direction:column;align-items:center;">
+        <div class="card-big">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div style="background:#2563EB;border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;">B</div>
+            <div class="card-title">Binge App — Next.js on Vercel</div>
+          </div>
+          <div class="card-desc">The core of everything. Handles all pages, business logic, and API calls.</div>
+          <div class="card-big-grid">
+            <div class="mini-card">
+              <div class="mini-card-title">🖥 Pages &amp; UI</div>
+              <div class="mini-card-desc">Home, Profile, Rankings, Search, Movie Details — all the screens users see</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-card-title">⚡ API Routes</div>
+              <div class="mini-card-desc">Backend endpoints: ratings, watchlist, follow, search, share card</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-card-title">🛡 Auth &amp; Sessions</div>
+              <div class="mini-card-desc">Auth.js — verifies who you are, keeps you logged in securely</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-card-title">🔒 Middleware</div>
+              <div class="mini-card-desc">Guards every page — redirects if not logged in or no username set</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Arrow down -->
+    <div class="arrow-container">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <span class="arrow-label">read / write data</span>
+    </div>
+
+    <!-- LAYER 3: Database -->
+    <div class="layer">
+      <div class="layer-label">Where Data Lives</div>
+      <div class="layer-row">
+        <div class="card blue" style="max-width:640px;flex:unset;width:100%;">
+          <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+            <div style="flex:1;min-width:120px;">
+              <div class="card-icon">🗄</div>
+              <div class="card-title" style="margin-bottom:4px;">Neon Postgres (Database)</div>
+              <div class="card-desc">Serverless PostgreSQL — stores everything permanently. Accessed via Prisma ORM (a safe query layer).</div>
+              <span class="badge badge-green">Always-on · Serverless</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;flex:2;min-width:200px;margin-top:4px;">
+              <div class="mini-card"><div class="mini-card-title">👤 Users</div><div class="mini-card-desc">Name, email, username, bio, avatar</div></div>
+              <div class="mini-card"><div class="mini-card-title">⭐ Rankings</div><div class="mini-card-desc">ELO scores per movie/show</div></div>
+              <div class="mini-card"><div class="mini-card-title">⚔️ Comparisons</div><div class="mini-card-desc">Head-to-head matchup history</div></div>
+              <div class="mini-card"><div class="mini-card-title">🔖 Watchlist</div><div class="mini-card-desc">Saved movies &amp; shows</div></div>
+              <div class="mini-card"><div class="mini-card-title">👥 Follows</div><div class="mini-card-desc">Who follows whom</div></div>
+              <div class="mini-card"><div class="mini-card-title">📝 Ratings</div><div class="mini-card-desc">Tier, review, timestamps</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow down (dashed, coming soon) -->
+    <div class="arrow-container" style="opacity:0.4;">
+      <div class="arrow-line" style="background:rgba(139,92,246,0.3);"></div>
+      <div class="arrow-head" style="border-top-color:rgba(139,92,246,0.4);"></div>
+      <span class="arrow-label" style="color:rgba(139,92,246,0.5);">coming soon</span>
+    </div>
+
+    <!-- LAYER 4: Coming Soon -->
+    <div class="layer">
+      <div class="layer-label">Coming Soon</div>
+      <div class="layer-row">
+        <div class="card dim">
+          <div class="card-icon">🖼</div>
+          <div class="card-title">Vercel Blob</div>
+          <div class="card-desc">Cloud storage for profile photos users upload.</div>
+          <span class="badge badge-dim">Tier 2</span>
+        </div>
+        <div class="card dim">
+          <div class="card-icon">🃏</div>
+          <div class="card-title">satori (Share Cards)</div>
+          <div class="card-desc">Renders "Your Top 5" as a PNG image — shareable to Instagram &amp; iMessage.</div>
+          <span class="badge badge-purple">Tier 2 · In Progress</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /diagram -->
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#2563EB;"></div>
+      Core app (built &amp; live)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(249,115,22,0.7);"></div>
+      External services (third-party)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(34,197,94,0.7);"></div>
+      Database (always-on)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(139,92,246,0.6);"></div>
+      Coming in Tier 2
+    </div>
+  </div>
+
+  <div class="footer">
+    Binge · Built on Next.js + Neon + TMDB · Deployed on Vercel
+  </div>
+
+</body>
+</html>
