@@ -11,6 +11,7 @@ import ProfileMenu from "@/components/ProfileMenu"
 import ShareCardPreview from "@/components/ShareCardPreview"
 import ProfileTabSwitcher from "@/components/ProfileTabSwitcher"
 import TierList from "@/components/TierList"
+import TasteTab from "@/components/TasteTab"
 import AvatarUpload from "@/components/AvatarUpload"
 import { Star, Zap, AtSign, Pencil, Popcorn } from "lucide-react"
 import type { RatedItem, MediaType } from "@/types"
@@ -55,7 +56,7 @@ const RATING_THRESHOLD = 5
 export default async function ProfilePage({ params, searchParams }: ProfilePageProps) {
   const { id } = await params
   const { tab: tabParam, type: typeParam } = await searchParams
-  const activeTab = tabParam === "rankings" ? "rankings" : "overview"
+  const activeTab = tabParam === "rankings" ? "rankings" : tabParam === "taste" ? "taste" : "overview"
   const activeType = typeParam === "movie" ? "movie" : typeParam === "tv" ? "tv" : "all"
   const session = await auth()
   const currentUserId = session?.user?.id ?? ""
@@ -364,6 +365,10 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
             </div>
           )}
 
+          {isOwnProfile && hasAnyRankings && (
+            <ShareCardPreview userId={id} />
+          )}
+
           <div className="flex flex-col gap-8">
             {showMovieRankings && top5Movies.length > 0 ? (
               <RankingSection
@@ -408,15 +413,17 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
             ) : null}
           </div>
 
-          {isOwnProfile && hasAnyRankings && (
-            <ShareCardPreview userId={id} />
-          )}
         </>
       )}
 
       {/* ── Rankings tab ── */}
       {activeTab === "rankings" && (
         <TierList items={rankingItems} />
+      )}
+
+      {/* ── Taste DNA tab ── */}
+      {activeTab === "taste" && (
+        <TasteTab userId={id} />
       )}
     </div>
   )

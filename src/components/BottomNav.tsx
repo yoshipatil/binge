@@ -22,7 +22,12 @@ export default function BottomNav() {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-white/[0.07] bg-black"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{
+        paddingBottom: "env(safe-area-inset-bottom)",
+        // Force GPU compositing layer — prevents iOS Safari fixed-element jump during navigation
+        transform: "translateZ(0)",
+        willChange: "transform",
+      }}
     >
       <div className="flex items-center justify-around px-2">
         {links.map(({ href, label, icon: Icon }) => {
@@ -53,17 +58,17 @@ export default function BottomNav() {
               const profileActive = pathname === "/profile/me" || pathname.startsWith("/profile/")
               return (
                 <>
-                  <div className={`flex items-center justify-center rounded-xl p-1 transition-all duration-200 ${profileActive ? "bg-blue-500/15" : ""}`}>
+                  <div className={`flex items-center justify-center rounded-xl p-1.5 transition-all duration-200 ${profileActive ? "bg-blue-500/15" : ""}`}>
                     {session.user.image ? (
                       <Image
                         src={session.user.image}
                         alt={session.user.name ?? ""}
-                        width={26}
-                        height={26}
-                        className={`rounded-full transition-all duration-200 ${profileActive ? "ring-2 ring-blue-400/70" : "ring-1 ring-white/20"}`}
+                        width={22}
+                        height={22}
+                        className={`rounded-full transition-colors duration-200 ${profileActive ? "ring-2 ring-blue-400/70" : "ring-1 ring-white/20"}`}
                       />
                     ) : (
-                      <div className={`h-[26px] w-[26px] rounded-full bg-blue-500/30 transition-all duration-200 ${profileActive ? "ring-2 ring-blue-400/70" : ""}`} />
+                      <div className={`h-[22px] w-[22px] rounded-full bg-blue-500/30 transition-colors duration-200 ${profileActive ? "ring-2 ring-blue-400/70" : ""}`} />
                     )}
                   </div>
                   <span className={`text-[10px] font-medium tracking-wide transition-colors duration-200 ${profileActive ? "text-blue-400" : "text-white/30"}`}>Me</span>

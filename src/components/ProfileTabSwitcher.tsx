@@ -14,8 +14,9 @@ export default function ProfileTabSwitcher({ profileId, totalRatings }: ProfileT
   const activeType = searchParams.get("type") ?? "all"
 
   const tabs = [
-    { key: "overview", label: "Overview", href: `/profile/${profileId}` },
-    { key: "rankings", label: `Rankings${totalRatings > 0 ? ` · ${totalRatings}` : ""}`, href: `/profile/${profileId}?tab=rankings` },
+    { key: "overview",  label: "Overview",  href: `/profile/${profileId}` },
+    { key: "rankings",  label: `Rankings${totalRatings > 0 ? ` · ${totalRatings}` : ""}`, href: `/profile/${profileId}?tab=rankings` },
+    { key: "taste",     label: "Taste DNA", href: `/profile/${profileId}?tab=taste` },
   ]
 
   const typeFilters = [

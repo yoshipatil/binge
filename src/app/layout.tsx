@@ -4,6 +4,7 @@ import "./globals.css";
 import { auth } from "@/auth";
 import NavBar from "@/components/NavBar";
 import BottomNav from "@/components/BottomNav";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Providers from "@/components/Providers";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -65,6 +66,7 @@ export default async function RootLayout({
                 Privacy Policy
               </a>
             </footer>
+            <PWAInstallPrompt />
             <BottomNav />
           </PostHogProvider>
         </Providers>
