@@ -17,7 +17,7 @@ const links = [
 
 export default function BottomNav() {
   const pathname = usePathname()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
 
   return (
     <nav
@@ -48,8 +48,15 @@ export default function BottomNav() {
           )
         })}
 
-        {/* Auth tab */}
-        {session?.user ? (
+        {/* Auth tab — render a stable placeholder during session load to prevent layout jump */}
+        {status === "loading" ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px]">
+            <div className="flex items-center justify-center rounded-xl p-1.5">
+              <div className="h-[22px] w-[22px] rounded-full bg-white/10" />
+            </div>
+            <span className="text-[10px] font-medium tracking-wide text-white/25">Me</span>
+          </div>
+        ) : session?.user ? (
           <Link
             href="/profile/me"
             className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-h-[56px]"

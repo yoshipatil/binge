@@ -73,8 +73,17 @@ export async function GET(request: NextRequest) {
   const requestedUserId = searchParams.get("userId")
   const cardType = searchParams.get("type") ?? "preview"
 
-  const session = await auth()
-  const userId = requestedUserId ?? session?.user?.id
+  // Only call auth() when userId isn't already in query params.
+  // auth() throws in some mobile/PWA environments (cookie parsing), causing 500.
+  let userId: string | null = requestedUserId
+  if (!userId) {
+    try {
+      const session = await auth()
+      userId = session?.user?.id ?? null
+    } catch {
+      // auth() is a fallback — if it fails, we just 401 below
+    }
+  }
   if (!userId) return new Response("Unauthorized", { status: 401 })
 
   const user = await prisma.user.findUnique({
@@ -108,11 +117,16 @@ export async function GET(request: NextRequest) {
   const top5Details = await Promise.all(
     top5.map((r) => fetchItemDetails(r.tmdbId, r.mediaType))
   )
-  const top5Posters = await Promise.all(
-    top5Details.map((d) =>
+
+  // Fetch all images (5 posters + avatar) in parallel — avatar was previously sequential
+  // after posters which added ~100-300ms of unnecessary latency.
+  // Skip custom fonts — remote WOFF/WOFF2 URLs crash satori (TTF-only).
+  const [avatarDataUrl, ...top5Posters] = await Promise.all([
+    user.image ? toDataUrl(user.image) : Promise.resolve(null),
+    ...top5Details.map((d) =>
       d.poster ? toDataUrl(`${TMDB_IMG}/w342${d.poster}`) : Promise.resolve(null)
-    )
-  )
+    ),
+  ])
 
   const items: RankedItem[] = top5.map((r, i) => ({
     rank: i + 1,
@@ -123,34 +137,35 @@ export async function GET(request: NextRequest) {
     mediaType: r.mediaType,
   }))
 
-  // Load avatar; skip custom fonts — remote WOFF/WOFF2 URLs crash satori (TTF-only).
-  // @vercel/og bundles Geist-Regular.ttf as its default and uses it automatically
-  // when no `fonts` option is supplied.
-  const avatarDataUrl = await (user.image ? toDataUrl(user.image) : Promise.resolve(null))
-
   const isStories = cardType === "stories"
   const W = isStories ? 1080 : 600
   const H = isStories ? 1920 : 600
-  const PAD = isStories ? 72 : 40
+  const PAD = isStories ? 68 : 36
 
   const userName = (user.name ?? "Binge User").split(" ").slice(0, 2).join(" ")
   const handle = user.username ? `@${user.username}` : ""
 
   // Scale factor: stories is ~1.8× preview
   const S = isStories ? 1.8 : 1
-  const posterW = Math.round(44 * S)
-  const posterH = Math.round(66 * S)
-  const rowH = Math.round(80 * S)
+  // #1 hero poster is noticeably bigger than the rest — makes it visually unmissable
+  const heroPosterW = Math.round(62 * S)
+  const heroPosterH = Math.round(93 * S)
+  const posterW = Math.round(38 * S)
+  const posterH = Math.round(57 * S)
+  const heroRowH = Math.round(112 * S)
+  const rowH = Math.round(68 * S)
   const rankSize = Math.round(13 * S)
-  const titleSize = Math.round(14 * S)
-  const yearSize = Math.round(11 * S)
+  const heroRankSize = Math.round(22 * S)
+  const titleSize = Math.round(13 * S)
+  const heroTitleSize = Math.round(15 * S)
+  const yearSize = Math.round(10 * S)
 
   // Amber for #1 (achievement feel), fading white for rest
   const rankColor = (rank: number) => {
     if (rank === 1) return "#F59E0B"
-    if (rank === 2) return "rgba(255,255,255,0.55)"
-    if (rank === 3) return "rgba(255,255,255,0.40)"
-    return "rgba(255,255,255,0.25)"
+    if (rank === 2) return "rgba(255,255,255,0.50)"
+    if (rank === 3) return "rgba(255,255,255,0.38)"
+    return "rgba(255,255,255,0.22)"
   }
 
   try {
@@ -160,7 +175,7 @@ export async function GET(request: NextRequest) {
         style={{
           width: W,
           height: H,
-          background: "linear-gradient(160deg, #000000 0%, #060C1A 100%)",
+          background: "linear-gradient(160deg, #04060F 0%, #070B1C 55%, #040609 100%)",
           display: "flex",
           flexDirection: "column",
           padding: PAD,
@@ -173,23 +188,35 @@ export async function GET(request: NextRequest) {
         <div
           style={{
             position: "absolute",
-            bottom: isStories ? -200 : -120,
-            left: isStories ? -100 : -60,
-            width: isStories ? 700 : 380,
-            height: isStories ? 700 : 380,
-            background: "radial-gradient(circle, rgba(37,99,235,0.18) 0%, rgba(37,99,235,0) 70%)",
+            bottom: isStories ? -220 : -130,
+            left: isStories ? -120 : -70,
+            width: isStories ? 800 : 440,
+            height: isStories ? 800 : 440,
+            background: "radial-gradient(circle, rgba(37,99,235,0.22) 0%, rgba(37,99,235,0) 65%)",
             borderRadius: "50%",
           }}
         />
-        {/* Amber glow — top right, anchors the #1 feeling */}
+        {/* Amber glow — top right, reinforces #1 gold feeling */}
         <div
           style={{
             position: "absolute",
-            top: isStories ? -80 : -50,
-            right: isStories ? -80 : -50,
-            width: isStories ? 400 : 220,
-            height: isStories ? 400 : 220,
-            background: "radial-gradient(circle, rgba(245,158,11,0.10) 0%, rgba(245,158,11,0) 70%)",
+            top: isStories ? -100 : -60,
+            right: isStories ? -100 : -60,
+            width: isStories ? 500 : 280,
+            height: isStories ? 500 : 280,
+            background: "radial-gradient(circle, rgba(245,158,11,0.14) 0%, rgba(245,158,11,0) 65%)",
+            borderRadius: "50%",
+          }}
+        />
+        {/* Subtle mid-blue shimmer — center */}
+        <div
+          style={{
+            position: "absolute",
+            top: isStories ? 700 : 200,
+            right: isStories ? -200 : -100,
+            width: isStories ? 600 : 340,
+            height: isStories ? 600 : 340,
+            background: "radial-gradient(circle, rgba(99,102,241,0.10) 0%, rgba(99,102,241,0) 70%)",
             borderRadius: "50%",
           }}
         />
@@ -329,36 +356,64 @@ export async function GET(request: NextRequest) {
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: isStories ? 14 : 8,
+            gap: isStories ? 12 : 7,
             flex: 1,
           }}
         >
-          {items.map((item) => (
+          {items.map((item) => {
+            const isHero = item.rank === 1
+            const itemPosterW = isHero ? heroPosterW : posterW
+            const itemPosterH = isHero ? heroPosterH : posterH
+            const itemRowH = isHero ? heroRowH : rowH
+            const itemRankSize = isHero ? heroRankSize : rankSize
+            const itemTitleSize = isHero ? heroTitleSize : titleSize
+            const itemRankW = isHero ? (isStories ? 56 : 32) : (isStories ? 44 : 24)
+
+            return (
             <div
               key={item.rank}
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: isStories ? 18 : 10,
-                background: item.rank === 1
-                  ? "rgba(245,158,11,0.06)"
-                  : "rgba(255,255,255,0.03)",
-                borderRadius: isStories ? 16 : 10,
-                padding: isStories ? "14px 18px" : "8px 10px",
-                border: item.rank === 1
-                  ? "1px solid rgba(245,158,11,0.16)"
-                  : "1px solid rgba(255,255,255,0.06)",
-                height: rowH,
+                gap: isStories ? 16 : 9,
+                background: isHero
+                  ? "linear-gradient(135deg, rgba(245,158,11,0.11) 0%, rgba(245,158,11,0.04) 100%)"
+                  : "rgba(255,255,255,0.028)",
+                borderRadius: isStories ? 18 : 11,
+                padding: isHero
+                  ? (isStories ? "16px 20px" : "9px 12px")
+                  : (isStories ? "10px 16px" : "6px 9px"),
+                border: isHero
+                  ? "1px solid rgba(245,158,11,0.24)"
+                  : "1px solid rgba(255,255,255,0.05)",
+                height: itemRowH,
                 boxSizing: "border-box",
+                position: "relative",
+                overflow: "hidden",
               }}
             >
-              {/* Rank number — amber + large for #1 */}
+              {/* Left accent bar — only on #1 */}
+              {isHero && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: isStories ? 16 : 9,
+                    bottom: isStories ? 16 : 9,
+                    width: isStories ? 3 : 2,
+                    background: "linear-gradient(180deg, #F59E0B 0%, rgba(245,158,11,0.3) 100%)",
+                    borderRadius: 2,
+                  }}
+                />
+              )}
+
+              {/* Rank number */}
               <span
                 style={{
                   color: rankColor(item.rank),
-                  fontSize: item.rank === 1 ? Math.round(rankSize * 1.5) : rankSize,
+                  fontSize: itemRankSize,
                   fontWeight: 900,
-                  width: isStories ? 50 : 28,
+                  width: itemRankW,
                   textAlign: "center",
                   lineHeight: 1,
                   letterSpacing: "-0.5px",
@@ -368,32 +423,48 @@ export async function GET(request: NextRequest) {
                 {item.rank}
               </span>
 
-              {/* Poster thumbnail */}
-              {item.posterDataUrl ? (
-                <img
-                  src={item.posterDataUrl}
-                  width={posterW}
-                  height={posterH}
-                  style={{
-                    borderRadius: isStories ? 8 : 5,
-                    objectFit: "cover",
-                    flexShrink: 0,
-                    border: item.rank === 1
-                      ? "1.5px solid rgba(245,158,11,0.28)"
-                      : "1px solid rgba(255,255,255,0.07)",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: posterW,
-                    height: posterH,
-                    background: "rgba(255,255,255,0.05)",
-                    borderRadius: isStories ? 8 : 5,
-                    flexShrink: 0,
-                  }}
-                />
-              )}
+              {/* Poster thumbnail — #1 gets a bloom glow behind it */}
+              <div style={{ position: "relative", flexShrink: 0, display: "flex" }}>
+                {isHero && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: isStories ? -10 : -6,
+                      bottom: isStories ? -10 : -6,
+                      left: isStories ? -10 : -6,
+                      right: isStories ? -10 : -6,
+                      background: "radial-gradient(circle, rgba(245,158,11,0.28) 0%, rgba(245,158,11,0) 70%)",
+                      borderRadius: "50%",
+                    }}
+                  />
+                )}
+                {item.posterDataUrl ? (
+                  <img
+                    src={item.posterDataUrl}
+                    width={itemPosterW}
+                    height={itemPosterH}
+                    style={{
+                      borderRadius: isStories ? 9 : 6,
+                      objectFit: "cover",
+                      flexShrink: 0,
+                      border: isHero
+                        ? "1.5px solid rgba(245,158,11,0.40)"
+                        : "1px solid rgba(255,255,255,0.06)",
+                      position: "relative",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: itemPosterW,
+                      height: itemPosterH,
+                      background: isHero ? "rgba(245,158,11,0.08)" : "rgba(255,255,255,0.05)",
+                      borderRadius: isStories ? 9 : 6,
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+              </div>
 
               {/* Title + year */}
               <div
@@ -408,11 +479,11 @@ export async function GET(request: NextRequest) {
               >
                 <span
                   style={{
-                    color: item.rank === 1 ? "#ffffff" : "rgba(255,255,255,0.82)",
-                    fontSize: titleSize,
-                    fontWeight: item.rank === 1 ? 700 : 600,
-                    lineHeight: 1.25,
-                    letterSpacing: "-0.2px",
+                    color: isHero ? "#ffffff" : "rgba(255,255,255,0.80)",
+                    fontSize: itemTitleSize,
+                    fontWeight: isHero ? 900 : 600,
+                    lineHeight: 1.2,
+                    letterSpacing: isHero ? "-0.5px" : "-0.2px",
                     overflow: "hidden",
                     whiteSpace: "nowrap",
                     textOverflow: "ellipsis",
@@ -420,7 +491,7 @@ export async function GET(request: NextRequest) {
                 >
                   {item.title}
                 </span>
-                <span style={{ color: "rgba(255,255,255,0.28)", fontSize: yearSize }}>
+                <span style={{ color: isHero ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.24)", fontSize: yearSize }}>
                   {item.year}{item.mediaType === "tv" ? "  ·  TV" : ""}
                 </span>
               </div>
@@ -431,23 +502,23 @@ export async function GET(request: NextRequest) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: isStories ? 54 : 32,
-                  height: isStories ? 54 : 32,
+                  width: isHero ? (isStories ? 60 : 36) : (isStories ? 48 : 28),
+                  height: isHero ? (isStories ? 60 : 36) : (isStories ? 48 : 28),
                   borderRadius: "50%",
-                  background: item.rank === 1
-                    ? "rgba(245,158,11,0.12)"
-                    : "rgba(37,99,235,0.10)",
-                  border: item.rank === 1
-                    ? "1.5px solid rgba(245,158,11,0.30)"
-                    : "1px solid rgba(37,99,235,0.22)",
+                  background: isHero
+                    ? "rgba(245,158,11,0.14)"
+                    : "rgba(37,99,235,0.09)",
+                  border: isHero
+                    ? "1.5px solid rgba(245,158,11,0.35)"
+                    : "1px solid rgba(37,99,235,0.20)",
                   flexShrink: 0,
                 }}
               >
                 <span
                   style={{
-                    color: item.rank === 1 ? "#F59E0B" : "#60a5fa",
-                    fontSize: isStories ? 19 : 11,
-                    fontWeight: 700,
+                    color: isHero ? "#F59E0B" : "#60a5fa",
+                    fontSize: isHero ? (isStories ? 20 : 12) : (isStories ? 17 : 10),
+                    fontWeight: 800,
                     lineHeight: 1,
                   }}
                 >
@@ -455,7 +526,8 @@ export async function GET(request: NextRequest) {
                 </span>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* ── Footer ── */}
