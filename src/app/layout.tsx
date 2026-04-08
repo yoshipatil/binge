@@ -50,22 +50,22 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html lang="en" className={`${outfit.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col bg-background text-foreground">
+    <html lang="en" className={`${outfit.variable} h-dvh antialiased`}>
+      <body className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
         <Providers session={session}>
           <PostHogProvider>
             <NavBar />
-            <main className="flex-1">
+            <main className="flex-1 overflow-y-auto overscroll-none">
               {children}
+              {/* Footer — TMDB attribution required by ToS, inside scrollable area */}
+              <footer className="border-t border-white/5 pb-[calc(76px+env(safe-area-inset-bottom))] pt-3 text-center text-[11px] text-white/20 md:pb-4 md:pt-4 md:text-xs md:text-white/25">
+                This product uses the TMDB API but is not endorsed or certified by TMDB.
+                {" · "}
+                <a href="/privacy" className="underline-offset-2 hover:text-white/40 hover:underline">
+                  Privacy Policy
+                </a>
+              </footer>
             </main>
-            {/* Footer — TMDB attribution required by ToS, visible on all screen sizes */}
-            <footer className="border-t border-white/5 pb-[calc(76px+env(safe-area-inset-bottom))] pt-3 text-center text-[11px] text-white/20 md:pb-4 md:pt-4 md:text-xs md:text-white/25">
-              This product uses the TMDB API but is not endorsed or certified by TMDB.
-              {" · "}
-              <a href="/privacy" className="underline-offset-2 hover:text-white/40 hover:underline">
-                Privacy Policy
-              </a>
-            </footer>
             <PWAInstallPrompt />
             <BottomNav />
           </PostHogProvider>

@@ -24,9 +24,13 @@ export default function BottomNav() {
       className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-white/[0.07] bg-black"
       style={{
         paddingBottom: "env(safe-area-inset-bottom)",
-        // Force GPU compositing layer — prevents iOS Safari fixed-element jump during navigation
-        transform: "translateZ(0)",
-        willChange: "transform",
+        // iOS Safari PWA: fixed elements jump during navigation due to viewport
+        // recalculation. translate3d + backface-visibility: hidden forces a stable
+        // GPU compositing layer. willChange removed — it causes iOS compositing artifacts.
+        transform: "translate3d(0, 0, 0)",
+        WebkitTransform: "translate3d(0, 0, 0)",
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
       }}
     >
       <div className="flex items-center justify-around px-2">

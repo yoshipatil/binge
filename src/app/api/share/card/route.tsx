@@ -45,8 +45,12 @@ async function fetchItemDetails(tmdbId: number, mediaType: string) {
 }
 
 async function toDataUrl(url: string): Promise<string | null> {
+  // 5-second hard timeout per image — Vercel Hobby cap is 10s total,
+  // so hanging image fetches are the primary cause of cold-start 504s.
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 5000)
   try {
-    const res = await fetch(url)
+    const res = await fetch(url, { signal: controller.signal })
     if (!res.ok) return null
     const buf = await res.arrayBuffer()
     const b64 = Buffer.from(buf).toString("base64")
@@ -54,6 +58,8 @@ async function toDataUrl(url: string): Promise<string | null> {
     return `data:${ct};base64,${b64}`
   } catch {
     return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -86,16 +92,19 @@ export async function GET(request: NextRequest) {
   }
   if (!userId) return new Response("Unauthorized", { status: 401 })
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { name: true, username: true, image: true },
-  })
+  // Parallel DB queries — Neon cold start can add 2-5s, so sequential
+  // queries risk blowing through Vercel Hobby's 10s function timeout.
+  const [user, allRatings] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, username: true, image: true },
+    }),
+    prisma.rating.findMany({
+      where: { userId },
+      select: { tmdbId: true, mediaType: true, eloScore: true },
+    }),
+  ])
   if (!user) return new Response("Not found", { status: 404 })
-
-  const allRatings = await prisma.rating.findMany({
-    where: { userId },
-    select: { tmdbId: true, mediaType: true, eloScore: true },
-  })
   if (allRatings.length === 0) {
     return new Response("No ratings yet", { status: 400 })
   }
@@ -124,7 +133,7 @@ export async function GET(request: NextRequest) {
   const [avatarDataUrl, ...top5Posters] = await Promise.all([
     user.image ? toDataUrl(user.image) : Promise.resolve(null),
     ...top5Details.map((d) =>
-      d.poster ? toDataUrl(`${TMDB_IMG}/w342${d.poster}`) : Promise.resolve(null)
+      d.poster ? toDataUrl(`${TMDB_IMG}/w185${d.poster}`) : Promise.resolve(null)
     ),
   ])
 

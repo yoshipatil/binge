@@ -53,6 +53,11 @@ const nextConfig: NextConfig = {
     ]
   },
   images: {
+    // Skip Vercel Image Optimization — TMDB CDN already serves properly sized
+    // images (w154/w185/w342) and Google avatars are small WebP. Re-optimizing
+    // them burns through the free tier quota (5,000 transformations/month).
+    // Remove this when upgrading to Vercel Pro.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
