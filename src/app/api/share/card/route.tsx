@@ -45,10 +45,10 @@ async function fetchItemDetails(tmdbId: number, mediaType: string) {
 }
 
 async function toDataUrl(url: string): Promise<string | null> {
-  // 5-second hard timeout per image — Vercel Hobby cap is 10s total,
+  // 3-second hard timeout per image — Vercel Hobby cap is 10s total,
   // so hanging image fetches are the primary cause of cold-start 504s.
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 5000)
+  const timer = setTimeout(() => controller.abort(), 3000)
   try {
     const res = await fetch(url, { signal: controller.signal })
     if (!res.ok) return null
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
   const [avatarDataUrl, ...top5Posters] = await Promise.all([
     user.image ? toDataUrl(user.image) : Promise.resolve(null),
     ...top5Details.map((d) =>
-      d.poster ? toDataUrl(`${TMDB_IMG}/w185${d.poster}`) : Promise.resolve(null)
+      d.poster ? toDataUrl(`${TMDB_IMG}/w92${d.poster}`) : Promise.resolve(null)
     ),
   ])
 
